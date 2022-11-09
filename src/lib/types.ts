@@ -1,19 +1,12 @@
+export {
+    Filters as TableFilters,
+    Filter as TableFilter,
+    FilterOp as TableFilterOp,
+} from '@spec.dev/tables'
+
 export type StringKeyMap = { [key: string]: any }
 
-export enum FilterOp {
-    EqualTo = '=',
-    NotEqualTo = '!=',
-    GreaterThan = '>',
-    GreaterThanOrEqualTo = '>=',
-    LessThan = '<',
-    LessThanOrEqualTo = '<=',
-    In = 'in',
-    NotIn = 'not in',
+export type LiveObjectOptions = {
+    name?: string
+    table?: string
 }
-
-export interface Filter {
-    op: FilterOp
-    value: any
-}
-
-export type Filters = StringKeyMap | StringKeyMap[]
