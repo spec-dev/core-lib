@@ -14,11 +14,12 @@ export class LiveObject {
         let mainFunc
         if (!this.mainFunctionName || !this.hasOwnProperty(this.mainFunctionName)) {
             if (!this.options.table) throw 'No main function set or default table to query.'
-            mainFunc = this._queryDefaultTable
+            mainFunc = this._queryDefaultTable.bind(this)
         }
 
         mainFunc =
-            mainFunc || (this[this.mainFunctionName as keyof typeof this] as unknown as Function)
+            mainFunc ||
+            (this[this.mainFunctionName as keyof typeof this] as unknown as Function).bind(this)
         if (!mainFunc)
             throw `Live object main function not callable: this[${this.mainFunctionName}]`
 
