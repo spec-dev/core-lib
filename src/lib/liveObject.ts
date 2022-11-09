@@ -1,5 +1,5 @@
 import { LiveObjectOptions } from './types'
-import { queryTable, Filters as TableFilters } from '@spec.dev/tables'
+import { queryTable, Filters as TableFilters, SpecTableQueryOptions } from '@spec.dev/tables'
 
 export const DEFAULT_OPTIONS = {}
 
@@ -26,11 +26,18 @@ export class LiveObject {
         return mainFunc(...args)
     }
 
-    async queryTable(table: string, filters?: TableFilters): Promise<Response> {
-        return queryTable(table, filters)
+    async queryTable(
+        table: string,
+        filters?: TableFilters,
+        options?: SpecTableQueryOptions
+    ): Promise<Response> {
+        return queryTable(table, filters, options)
     }
 
-    async _queryDefaultTable(filters?: TableFilters): Promise<Response> {
-        return queryTable(this.options.table!, filters)
+    async _queryDefaultTable(
+        filters?: TableFilters,
+        options?: SpecTableQueryOptions
+    ): Promise<Response> {
+        return this.queryTable(this.options.table!, filters, options)
     }
 }
