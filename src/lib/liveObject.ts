@@ -1,7 +1,7 @@
 import { LiveObjectOptions } from './types'
 import { queryTable, Filters as TableFilters, SpecTableQueryOptions } from '@spec.dev/tables'
 
-export const DEFAULT_OPTIONS = {}
+export const DEFAULT_LIVE_OBJECT_OPTIONS = {}
 
 export class LiveObject {
     declare name: string
