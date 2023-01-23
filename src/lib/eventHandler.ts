@@ -1,0 +1,1 @@
+export const DEFAULT_EVENT_HANDLER_OPTIONS = {}

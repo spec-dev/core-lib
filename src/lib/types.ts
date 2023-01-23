@@ -1,3 +1,5 @@
+import { SpecEvent } from '@spec.types/spec'
+
 export {
     Filters as TableFilters,
     Filter as TableFilter,
@@ -13,18 +15,26 @@ export {
     Json,
     ChainId,
     StringKeyMap,
+    SpecEventOrigin,
+    TypedSpecEvent,
+    SpecEvent,
 } from '@spec.types/spec'
 
 export type LiveObjectOptions = {
-    table?: string
+    table: string
     uniqueBy?: string[] | string[][]
     indexBy?: string[] | string[][]
 }
 
-export type PropertOptions = {
+export type PropertyOptions = {
     desc?: string
     column?: string
     unique?: boolean
     index?: boolean
+    default?: any
     primaryTimestamp?: boolean
 }
+
+export type EventHandlerOptions = {}
+
+export type EventHandler = (event: SpecEvent) => Promise<SpecEvent | void>
