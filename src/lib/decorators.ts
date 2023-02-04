@@ -41,7 +41,7 @@ export function On(eventName: string, options?: EventHandlerOptions): PropertyDe
     }
 }
 
-export function BeforeOn(): PropertyDecorator {
+export function OnAll(): PropertyDecorator {
     return function (object: any, methodName: string | symbol) {
         object.constructor.prototype.beforeEventHandlers =
             object.constructor.prototype.beforeEventHandlers || []
@@ -50,7 +50,8 @@ export function BeforeOn(): PropertyDecorator {
 }
 
 function readManifest(): StringKeyMap {
-    const filePath = path.join(dir(getCallerFilePath()), 'manifest.json').slice(5)
+    let filePath = path.join(dir(getCallerFilePath()), 'manifest.json')
+    filePath = filePath.startsWith('file:') ? filePath.slice(5) : filePath
     const manifest = JSON.parse(read(filePath))
     if (!manifest.namespace) throw 'No "namespace" in manifest'
     if (!manifest.name) throw 'No "name" in manifest'

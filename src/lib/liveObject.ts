@@ -132,6 +132,8 @@ class LiveObject {
         // Ensure properties have changed since last snapshot.
         if (!this.properties.haveChanged(this)) return
 
+        console.log('CHANGED')
+
         // Get upsert components.
         const { insertData, conflictColumns, updateColumns } = this.properties.getUpsertComps(this)
 
