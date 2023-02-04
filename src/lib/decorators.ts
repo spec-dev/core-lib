@@ -50,7 +50,7 @@ export function BeforeOn(): PropertyDecorator {
 }
 
 function readManifest(): StringKeyMap {
-    const filePath = path.join(dir(getCallerFilePath()), 'manifest.json')
+    const filePath = path.join(dir(getCallerFilePath()), 'manifest.json').slice(5)
     console.log(filePath)
     const manifest = JSON.parse(read(filePath))
     if (!manifest.namespace) throw 'No "namespace" in manifest'
