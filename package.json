@@ -1,6 +1,6 @@
 {
     "name": "@spec.dev/core",
-    "version": "0.0.8",
+    "version": "0.0.9",
     "description": "Spec Core Library",
     "keywords": [
         "javascript",
@@ -30,8 +30,8 @@
         "types-generate": "dts-gen -m '@spec.dev/core' -s"
     },
     "dependencies": {
-        "@spec.dev/tables": "^0.0.5",
-        "@spec.types/spec": "^0.0.17"
+        "@spec.dev/tables": "^0.0.6",
+        "@spec.types/spec": "^0.0.19"
     },
     "devDependencies": {
         "@types/node": "^18.0.3",
@@ -40,6 +40,7 @@
         "npm-run-all": "^4.1.5",
         "prettier": "^2.1.2",
         "pretty-quick": "^3.1.0",
+        "reflect-metadata": "^0.1.13",
         "rimraf": "^3.0.2",
         "ts-loader": "^8.0.11",
         "typedoc": "^0.22.11",

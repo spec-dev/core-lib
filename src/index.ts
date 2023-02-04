@@ -1,3 +1,6 @@
 export * from './lib/decorators'
-export { LiveObject } from './lib/liveObject'
+import LiveObject from './lib/liveObject'
+import EventResponseQueue from './lib/eventResponseQueue'
+export { LiveObject, EventResponseQueue }
 export * from './lib/types'
+export * from './lib/utils'
