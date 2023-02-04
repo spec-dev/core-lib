@@ -6,13 +6,21 @@ import {
     RegisteredProperty,
 } from './types'
 import { SpecEvent, StringKeyMap, contractEventNamespaceForChainId } from '@spec.types/spec'
-import { fromNamespacedVersion, removeFirstDotSection } from './utils/formatters'
-import EventResponseQueue from './eventResponseQueue'
+import {
+    toNamespacedVersion,
+    fromNamespacedVersion,
+    removeFirstDotSection,
+} from './utils/formatters'
+import PublishEventQueue from './publishEventQueue'
 import Properties from './properties'
 import { upsert, select } from './tables'
 
 class LiveObject {
+    declare namespace: string
+
     declare name: string
+
+    declare version: string
 
     declare options: LiveObjectOptions
 
@@ -24,12 +32,20 @@ class LiveObject {
 
     declare beforeEventHandlers: string[]
 
-    eventResponseQueue: EventResponseQueue
+    publishEventQueue: PublishEventQueue
 
     properties: Properties
 
-    constructor(eventResponseQueue: EventResponseQueue) {
-        this.eventResponseQueue = eventResponseQueue
+    get eventName(): string {
+        return toNamespacedVersion(this.namespace, `${this.name}Upserted`, this.version)
+    }
+
+    get publishedEvents(): StringKeyMap[] {
+        return this.publishEventQueue.items()
+    }
+
+    constructor(publishEventQueue: PublishEventQueue) {
+        this.publishEventQueue = publishEventQueue
         this.properties = new Properties(this.propertyRegistry, this.options.uniqueBy)
     }
 
@@ -49,7 +65,7 @@ class LiveObject {
 
     new(liveObjectType, initialProperties: StringKeyMap = {}) {
         // Create new live object and pass event response queue for execution context.
-        const newLiveObject = new liveObjectType(this.eventResponseQueue)
+        const newLiveObject = new liveObjectType(this.publishEventQueue)
 
         // Assign any initial properties give.
         for (const propertyName in initialProperties) {
@@ -84,7 +100,7 @@ class LiveObject {
 
         // Convert back into live object type / property types.
         return records.map((record) => {
-            const liveObject = new liveObjectType(this.eventResponseQueue)
+            const liveObject = new liveObjectType(this.publishEventQueue)
             const propertyData = liveObject.properties.fromRecord(record)
             liveObject.assignProperties(propertyData)
             return liveObject
@@ -102,40 +118,48 @@ class LiveObject {
     }
 
     async load(): Promise<boolean> {
-        // Select by unique properties.
+        // Find this live object by its unique properties.
         const records =
             (await select(this.table, this.properties.getLoadFilters(this), { limit: 1 })) || []
 
-        // Return no existence.
-        if (!records.length) return false
-
-        // Convert back into live object type / property types.
-        const propertyData = this.properties.fromRecord(records[0])
-        this.assignProperties(propertyData)
-
-        return true
+        // Assign retrieved property values if record existed.
+        const exists = records.length > 0
+        exists && this.assignProperties(this.properties.fromRecord(records[0]))
+        return exists
     }
 
     async save() {
+        // Ensure properties have changed since last snapshot.
+        if (!this.properties.haveChanged(this)) return
+
         // Get upsert components.
         const { insertData, conflictColumns, updateColumns } = this.properties.getUpsertComps(this)
 
-        // Upsert the live object.
+        // Upsert live object.
         const records = await upsert(this.table, insertData, conflictColumns, updateColumns)
 
-        console.log(records)
-
-        // Either assign properties directly from response or load.
-        // Will need to load during multi-statement transactions or
+        // Map column names back to propertes and assign values.
         records.length && this.assignProperties(this.properties.fromRecord(records[0]))
 
-        // Figure out how to share emit event bullshit between models...
+        // Publish event stating that this live object was upserted.
+        this.publishChange()
     }
 
     assignProperties(data: StringKeyMap) {
         for (const propertyName in data) {
             this[propertyName] = data[propertyName]
         }
+        this.properties.capture(this)
+    }
+
+    publishChange() {
+        const data = this.properties.snapshot
+        if (!data) throw `Can't publish a live object change that hasn't been persisted yet.`
+        this.publishEvent(this.eventName, data)
+    }
+
+    publishEvent(name: string, data: StringKeyMap) {
+        this.publishEventQueue.push({ name, data })
     }
 
     _getHandlerForEventName(event: SpecEvent): RegisteredEventHandler | null {

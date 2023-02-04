@@ -1,8 +1,13 @@
 import LiveObject from './liveObject'
 import { PropertyOptions, RegisteredProperty, StringKeyMap, StringMap } from './types'
-import { attemptToParseNumber, camelToSnake, stringify } from './utils/formatters'
+import {
+    attemptToParseDate,
+    attemptToParseNumber,
+    camelToSnake,
+    stringify,
+} from './utils/formatters'
 import { UpsertComps } from './types'
-import { BOOLEAN, isDate, isObject, NUMBER } from './utils/propertyTypes'
+import { BOOLEAN, isDate, isObject, NUMBER, DATE } from './utils/propertyTypes'
 
 class Properties {
     protected registry: { [key: string]: RegisteredProperty }
@@ -12,6 +17,8 @@ class Properties {
     protected propertyToColumnName: StringMap = {}
 
     uniqueBy: string[]
+
+    snapshot: StringKeyMap = {}
 
     get uniqueByColumnNames(): string[] {
         return this.uniqueBy.map((propertyName) => this.toColumnName(propertyName) as string)
@@ -74,6 +81,25 @@ class Properties {
         }
     }
 
+    capture(liveObject: LiveObject) {
+        const snapshot = {}
+        for (const propertyName in this.registry) {
+            snapshot[propertyName] = liveObject[propertyName]
+        }
+        this.snapshot = snapshot
+    }
+
+    haveChanged(liveObject: LiveObject) {
+        if (!Object.keys(this.snapshot).length) return true
+
+        for (const propertyName in this.registry) {
+            if (liveObject[propertyName] !== this.snapshot[propertyName]) {
+                return true
+            }
+        }
+        return false
+    }
+
     withValues(liveObject: LiveObject): StringKeyMap {
         const withValues = {}
         for (const propertyName in this.registry) {
@@ -102,7 +128,10 @@ class Properties {
         for (const columnName in record) {
             const propertyName = this.fromColumnName(columnName)
             if (!propertyName) continue
-            propertyData[propertyName] = record[columnName]
+            propertyData[propertyName] = this.toColumnType(
+                record[columnName],
+                this.registry[propertyName].metadata?.name?.toLowerCase()
+            )
         }
         return propertyData
     }
@@ -121,6 +150,14 @@ class Properties {
         if (metaType === NUMBER) return attemptToParseNumber(value)
         if (metaType === BOOLEAN) return Boolean(value)
         if (isObject(value)) return stringify(value)
+        return value
+    }
+
+    fromColumnType(value: any, metaType: string | null) {
+        if (value === null) return null
+        if (metaType === DATE) return attemptToParseDate(value)
+        if (metaType === NUMBER) return attemptToParseNumber(value)
+        if (metaType === BOOLEAN) return Boolean(value)
         return value
     }
 

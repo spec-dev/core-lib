@@ -30,7 +30,7 @@
         "types-generate": "dts-gen -m '@spec.dev/core' -s"
     },
     "dependencies": {
-        "@spec.dev/tables": "^0.0.6",
+        "@spec.dev/tables": "file:../tables",
         "@spec.types/spec": "^0.0.19"
     },
     "devDependencies": {

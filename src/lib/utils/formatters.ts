@@ -1,6 +1,9 @@
 import { EventNameComps } from '../types'
 import humps from './humps'
 
+export const toNamespacedVersion = (nsp: string, name: string, version: string) =>
+    `${nsp}.${name}@${version}`
+
 export const fromNamespacedVersion = (namespacedVersion: string): EventNameComps => {
     const atSplit = (namespacedVersion || '').split('@')
     if (atSplit.length !== 2) {
@@ -70,6 +73,14 @@ export const attemptToParseNumber = (originalValue: any): any => {
     try {
         const numberValue = Number(originalValue)
         return numberValue > Number.MAX_SAFE_INTEGER ? originalValue : numberValue
+    } catch (err) {
+        return originalValue
+    }
+}
+
+export const attemptToParseDate = (originalValue: any): any => {
+    try {
+        return new Date(originalValue)
     } catch (err) {
         return originalValue
     }

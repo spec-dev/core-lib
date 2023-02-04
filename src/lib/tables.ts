@@ -24,7 +24,7 @@ export async function upsert(
     updateColumns: string[]
 ): Promise<StringKeyMap[]> {
     try {
-        return tableClient.upsert(table, insertData, conflictColumns, updateColumns)
+        return tableClient.upsert(table, insertData, conflictColumns, updateColumns, '*')
     } catch (err) {
         throw new QueryError('upsert', table, err)
     }
