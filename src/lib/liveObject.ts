@@ -36,6 +36,8 @@ class LiveObject {
 
     properties: Properties
 
+    tablesApiToken: string | null = null
+
     get eventName(): string {
         return toNamespacedVersion(this.namespace, `${this.name}Upserted`, this.version)
     }
@@ -66,6 +68,7 @@ class LiveObject {
     new(liveObjectType, initialProperties: StringKeyMap = {}) {
         // Create new live object and pass event response queue for execution context.
         const newLiveObject = new liveObjectType(this.publishEventQueue)
+        newLiveObject.tablesApiToken = this.tablesApiToken
 
         // Assign any initial properties give.
         for (const propertyName in initialProperties) {
@@ -96,11 +99,13 @@ class LiveObject {
         }
 
         // Find records.
-        const records = (await select(table, filters, options)) || []
+        const records =
+            (await select(table, filters, options, { token: this.tablesApiToken })) || []
 
         // Convert back into live object type / property types.
         return records.map((record) => {
             const liveObject = new liveObjectType(this.publishEventQueue)
+            liveObject.tablesApiToken = this.tablesApiToken
             const propertyData = liveObject.properties.fromRecord(record)
             liveObject.assignProperties(propertyData)
             return liveObject
@@ -120,7 +125,12 @@ class LiveObject {
     async load(): Promise<boolean> {
         // Find this live object by its unique properties.
         const records =
-            (await select(this.table, this.properties.getLoadFilters(this), { limit: 1 })) || []
+            (await select(
+                this.table,
+                this.properties.getLoadFilters(this),
+                { limit: 1 },
+                { token: this.tablesApiToken }
+            )) || []
 
         // Assign retrieved property values if record existed.
         const exists = records.length > 0
@@ -132,13 +142,13 @@ class LiveObject {
         // Ensure properties have changed since last snapshot.
         if (!this.properties.haveChanged(this)) return
 
-        console.log('CHANGED')
-
         // Get upsert components.
         const { insertData, conflictColumns, updateColumns } = this.properties.getUpsertComps(this)
 
         // Upsert live object.
-        const records = await upsert(this.table, insertData, conflictColumns, updateColumns)
+        const records = await upsert(this.table, insertData, conflictColumns, updateColumns, {
+            token: this.tablesApiToken,
+        })
 
         // Map column names back to propertes and assign values.
         records.length && this.assignProperties(this.properties.fromRecord(records[0]))

@@ -4,8 +4,17 @@ import {
     FilterOp as QueryFilterOp,
     SelectOptions as QuerySelectOptions,
     OrderByDirection as SelectOrderByDirection,
+    AuthOptions as QueryAuthOptions,
+    QueryPayload,
 } from '@spec.dev/tables'
-export { QueryFilter, QueryFilterOp, QuerySelectOptions, SelectOrderByDirection }
+export {
+    QueryFilter,
+    QueryFilterOp,
+    QuerySelectOptions,
+    SelectOrderByDirection,
+    QueryAuthOptions,
+    QueryPayload,
+}
 export {
     Address,
     BlockNumber,

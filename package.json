@@ -1,6 +1,6 @@
 {
     "name": "@spec.dev/core",
-    "version": "0.0.18",
+    "version": "0.0.19",
     "description": "Spec Core Library",
     "keywords": [
         "javascript",
@@ -30,7 +30,7 @@
         "types-generate": "dts-gen -m '@spec.dev/core' -s"
     },
     "dependencies": {
-        "@spec.dev/tables": "^0.0.10",
+        "@spec.dev/tables": "^0.0.12",
         "@spec.types/spec": "^0.0.20"
     },
     "devDependencies": {
