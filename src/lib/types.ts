@@ -34,6 +34,9 @@ export type Constructor<T> = { new (): T }
 
 export type LiveObjectOptions = {
     table: string
+    namespace: string
+    name?: string
+    version?: string
     uniqueBy: string | string[]
     indexBy?: string | string[]
 }
