@@ -1,7 +1,7 @@
 import { LiveObjectOptions, PropertyOptions, EventHandlerOptions, StringKeyMap } from './types'
 import 'reflect-metadata'
 import { dir, read } from './utils/file'
-import path from 'path'
+import path from 'node:path'
 
 export const DEFAULT_LIVE_OBJECT_OPTIONS = {}
 export const DEFAULT_PROPERTY_OPTIONS = {}
