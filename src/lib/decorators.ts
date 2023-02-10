@@ -1,7 +1,7 @@
 import { LiveObjectOptions, PropertyOptions, EventHandlerOptions, StringKeyMap } from './types'
 import 'reflect-metadata'
 import { dir, read } from './utils/file'
-import path from 'node:path'
+import { join } from 'node:path'
 
 export const DEFAULT_LIVE_OBJECT_OPTIONS = {}
 export const DEFAULT_PROPERTY_OPTIONS = {}
@@ -50,7 +50,7 @@ export function OnAll(): PropertyDecorator {
 }
 
 function readManifest(): StringKeyMap {
-    let filePath = path.join(dir(getCallerFilePath()), 'manifest.json')
+    let filePath = join(dir(getCallerFilePath()), 'manifest.json')
     filePath = filePath.startsWith('file:') ? filePath.slice(5) : filePath
     const manifest = JSON.parse(read(filePath))
     if (!manifest.namespace) throw 'No "namespace" in manifest'

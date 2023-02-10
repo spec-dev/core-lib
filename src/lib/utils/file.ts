@@ -1,4 +1,4 @@
-import fs from 'node:fs'
+import { readFileSync } from 'node:fs'
 
 export const dir = (path: string): string => {
     const split = path.split('/')
@@ -7,5 +7,5 @@ export const dir = (path: string): string => {
 }
 
 export const read = (path: string): string => {
-    return fs.readFileSync(path, 'utf8')
+    return readFileSync(path, 'utf8')
 }
