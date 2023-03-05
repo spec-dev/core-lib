@@ -28,6 +28,8 @@ export {
     SpecEventOrigin,
     TypedSpecEvent,
     SpecEvent,
+    Block,
+    Transaction,
 } from '@spec.types/spec'
 
 export type Constructor<T> = { new (): T }

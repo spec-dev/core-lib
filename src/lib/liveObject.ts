@@ -4,16 +4,23 @@ import {
     RegisteredEventHandler,
     QuerySelectOptions,
     RegisteredProperty,
+    Block,
+    Transaction,
+    SpecEvent,
+    SpecEventOrigin,
+    StringKeyMap,
 } from './types'
-import { SpecEvent, StringKeyMap, contractEventNamespaceForChainId } from '@spec.types/spec'
+import { contractEventNamespaceForChainId, schemaForChainId } from '@spec.types/spec'
 import {
     toNamespacedVersion,
     fromNamespacedVersion,
     removeFirstDotSection,
+    camelToSnake,
 } from './utils/formatters'
 import PublishEventQueue from './publishEventQueue'
 import Properties from './properties'
 import { upsert, select } from './tables'
+import humps from './utils/humps'
 
 class LiveObject {
     declare namespace: string
@@ -31,6 +38,12 @@ class LiveObject {
     declare eventHandlers: { [key: string]: RegisteredEventHandler }
 
     declare beforeEventHandlers: string[]
+
+    declare currentBlock: Block
+
+    declare currentTransaction: Transaction
+
+    declare currentEventOrigin: SpecEventOrigin
 
     publishEventQueue: PublishEventQueue
 
@@ -52,6 +65,8 @@ class LiveObject {
     }
 
     async handleEvent(event: SpecEvent) {
+        this.currentEventOrigin = event.origin
+
         // Get event handler method by name.
         const handler = this._getHandlerForEventName(event)
         if (!handler) throw `No event handler registered for event ${event.name}`
@@ -70,7 +85,7 @@ class LiveObject {
         const newLiveObject = new liveObjectType(this.publishEventQueue)
         newLiveObject.tablesApiToken = this.tablesApiToken
 
-        // Assign any initial properties give.
+        // Assign any initial properties given.
         for (const propertyName in initialProperties) {
             newLiveObject[propertyName] = initialProperties[propertyName]
         }
@@ -140,7 +155,10 @@ class LiveObject {
 
     async save() {
         // Ensure properties have changed since last snapshot.
-        if (!this.properties.haveChanged(this)) return
+        if (!this.properties.haveChanged(this)) {
+            console.warn('No properties have changed - not saving')
+            return
+        }
 
         // Get upsert components.
         const { insertData, conflictColumns, updateColumns } = this.properties.getUpsertComps(this)
@@ -157,7 +175,54 @@ class LiveObject {
         this.publishChange()
     }
 
+    async query(
+        table: string,
+        where: StringKeyMap | StringKeyMap[],
+        options?: QuerySelectOptions
+    ): Promise<any[]> {
+        // Convert property names into column names within where conditions and options.
+        const filters = (Array.isArray(where) ? where : [where]).map((filter) => {
+            const formatted = {}
+            for (const propertyName in filter) {
+                const columnName = camelToSnake(propertyName)
+                formatted[columnName] = filter[propertyName]
+            }
+            return formatted
+        })
+        if (options?.orderBy?.column) {
+            options.orderBy.column = camelToSnake(options.orderBy.column)
+        }
+
+        // Perform query.
+        const records =
+            (await select(table, filters, options, { token: this.tablesApiToken })) || []
+
+        // Convert resulting records to camelCase.
+        return humps.camelizeKeys(records)
+    }
+
+    async getCurrentBlock(): Promise<Block> {
+        if (this.currentBlock) return this.currentBlock
+        const { chainId, blockHash } = this.currentEventOrigin
+        const tablePath = [schemaForChainId[chainId], 'blocks'].join('.')
+        const records = await this.query(tablePath, { hash: blockHash }, { limit: 1 })
+        this.currentBlock = records[0]
+        return this.currentBlock
+    }
+
+    async getCurrentTransaction(): Promise<Transaction> {
+        if (this.currentTransaction) return this.currentTransaction
+        const { chainId, transactionHash } = this.currentEventOrigin
+        const tablePath = [schemaForChainId[chainId], 'transactions'].join('.')
+        const records = await this.query(tablePath, { hash: transactionHash }, { limit: 1 })
+        this.currentTransaction = records[0]
+        return this.currentTransaction
+    }
+
     assignProperties(data: StringKeyMap) {
+        if (!Object.keys(data).length) {
+            console.warn(`Assigning empty properties`)
+        }
         for (const propertyName in data) {
             this[propertyName] = data[propertyName]
         }
@@ -167,6 +232,9 @@ class LiveObject {
     publishChange() {
         const data = this.properties.snapshot
         if (!data) throw `Can't publish a live object change that hasn't been persisted yet.`
+        if (!Object.keys(data).length) {
+            console.warn(`Publishing empty data`)
+        }
         this.publishEvent(this.eventName, data)
     }
 

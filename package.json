@@ -1,6 +1,6 @@
 {
     "name": "@spec.dev/core",
-    "version": "0.0.31",
+    "version": "0.0.33",
     "description": "Spec Core Library",
     "keywords": [
         "javascript",
@@ -31,7 +31,7 @@
     },
     "dependencies": {
         "@spec.dev/tables": "^0.0.14",
-        "@spec.types/spec": "^0.0.20"
+        "@spec.types/spec": "^0.0.21"
     },
     "devDependencies": {
         "@types/node": "^18.0.3",

@@ -8,7 +8,7 @@ class PublishEventQueue {
     }
 
     items(): StringKeyMap[] {
-        return this.queue
+        return [...this.queue]
     }
 }
 
