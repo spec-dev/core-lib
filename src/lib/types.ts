@@ -1,4 +1,3 @@
-import { SpecEvent, StringKeyMap } from '@spec.types/spec'
 import {
     Filter as QueryFilter,
     FilterOp as QueryFilterOp,
@@ -15,6 +14,11 @@ export {
     QueryAuthOptions,
     QueryPayload,
 }
+
+import { StringKeyMap, SpecEventOrigin, TypedSpecEvent, SpecEvent } from '@spec.types/spec'
+export type Event = SpecEvent
+export type EventOrigin = SpecEventOrigin
+export type TypedEvent<T> = TypedSpecEvent<T>
 export {
     Address,
     BlockNumber,
@@ -25,9 +29,6 @@ export {
     ChainId,
     StringKeyMap,
     StringMap,
-    SpecEventOrigin,
-    TypedSpecEvent,
-    SpecEvent,
     Block,
     Transaction,
 } from '@spec.types/spec'
@@ -59,7 +60,7 @@ export type RegisteredProperty = {
 
 export type EventHandlerOptions = {}
 
-export type EventHandler = (event: SpecEvent) => Promise<void>
+export type EventHandler = (event: Event) => Promise<void>
 
 export type EventNameComps = {
     nsp: string

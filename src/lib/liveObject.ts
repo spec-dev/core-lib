@@ -6,8 +6,8 @@ import {
     RegisteredProperty,
     Block,
     Transaction,
-    SpecEvent,
-    SpecEventOrigin,
+    Event,
+    EventOrigin,
     StringKeyMap,
 } from './types'
 import { contractEventNamespaceForChainId, schemaForChainId } from '@spec.types/spec'
@@ -43,7 +43,7 @@ class LiveObject {
 
     declare currentTransaction: Transaction
 
-    declare currentEventOrigin: SpecEventOrigin
+    declare currentEventOrigin: EventOrigin
 
     publishEventQueue: PublishEventQueue
 
@@ -64,7 +64,7 @@ class LiveObject {
         this.properties = new Properties(this.propertyRegistry, this.options.uniqueBy)
     }
 
-    async handleEvent(event: SpecEvent) {
+    async handleEvent(event: Event) {
         this.currentEventOrigin = event.origin
 
         // Get event handler method by name.
@@ -242,7 +242,7 @@ class LiveObject {
         this.publishEventQueue.push({ name, data })
     }
 
-    _getHandlerForEventName(event: SpecEvent): RegisteredEventHandler | null {
+    _getHandlerForEventName(event: Event): RegisteredEventHandler | null {
         // Try matching against full event name first.
         let handler = this.eventHandlers[event.name]
         if (handler) return handler
@@ -267,7 +267,7 @@ class LiveObject {
         return handler || null
     }
 
-    async _performBeforeEventHandlers(event: SpecEvent) {
+    async _performBeforeEventHandlers(event: Event) {
         const methodNames = this.beforeEventHandlers || []
         for (const methodName of methodNames) {
             const beforeEventHandler = ((this as StringKeyMap)[methodName] as EventHandler).bind(
