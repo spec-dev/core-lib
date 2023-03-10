@@ -31,7 +31,7 @@ export function Property(options?: PropertyOptions): PropertyDecorator {
     }
 }
 
-export function On(eventName: string, options?: EventHandlerOptions): PropertyDecorator {
+export function OnEvent(eventName: string, options?: EventHandlerOptions): PropertyDecorator {
     return function (object: any, methodName: string | symbol) {
         options = { ...DEFAULT_EVENT_HANDLER_OPTIONS, ...(options || {}) }
         object.constructor.prototype.eventHandlers =
@@ -40,7 +40,7 @@ export function On(eventName: string, options?: EventHandlerOptions): PropertyDe
     }
 }
 
-export function OnAll(): PropertyDecorator {
+export function OnAllEvents(): PropertyDecorator {
     return function (object: any, methodName: string | symbol) {
         object.constructor.prototype.beforeEventHandlers =
             object.constructor.prototype.beforeEventHandlers || []

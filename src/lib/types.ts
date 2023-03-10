@@ -32,8 +32,6 @@ export {
     Transaction,
 } from '@spec.types/spec'
 
-export type Constructor<T> = { new (): T }
-
 export type LiveObjectOptions = {
     table: string
     namespace: string
