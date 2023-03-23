@@ -15,7 +15,6 @@ import {
     toNamespacedVersion,
     fromNamespacedVersion,
     removeFirstDotSection,
-    camelToSnake,
 } from './utils/formatters'
 import PublishEventQueue from './publishEventQueue'
 import Properties from './properties'
@@ -105,9 +104,16 @@ class LiveObject {
             this.properties.toColumnKeys(filter)
         )
         if (options?.orderBy?.column) {
-            const orderByColumnName = this.properties.toColumnName(options.orderBy.column)
-            if (orderByColumnName) {
-                options.orderBy.column = orderByColumnName
+            const orderByColumns = Array.isArray(options.orderBy.column)
+                ? options.orderBy.column
+                : [options.orderBy.column]
+
+            const orderByColumnNames = orderByColumns
+                .map((c) => this.properties.toColumnName(c))
+                .filter((v) => !!v) as string[]
+
+            if (orderByColumnNames.length) {
+                options.orderBy.column = orderByColumnNames
             } else {
                 delete options.orderBy
             }
@@ -185,24 +191,9 @@ class LiveObject {
         where: StringKeyMap | StringKeyMap[] = [],
         options?: QuerySelectOptions
     ): Promise<any[]> {
-        // Convert property names into column names within where conditions and options.
-        const filters = (Array.isArray(where) ? where : [where]).map((filter) => {
-            const formatted = {}
-            for (const propertyName in filter) {
-                const columnName = camelToSnake(propertyName)
-                formatted[columnName] = filter[propertyName]
-            }
-            return formatted
-        })
-        if (options?.orderBy?.column) {
-            options.orderBy.column = camelToSnake(options.orderBy.column)
-        }
-
-        // Perform query.
+        const filters = Array.isArray(where) ? where : [where]
         const records =
             (await select(table, filters, options, { token: this.tablesApiToken })) || []
-
-        // Convert resulting records to camelCase.
         return humps.camelizeKeys(records)
     }
 
