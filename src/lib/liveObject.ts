@@ -94,7 +94,7 @@ class LiveObject {
 
     async find(
         liveObjectType,
-        where: StringKeyMap | StringKeyMap[],
+        where: StringKeyMap | StringKeyMap[] = [],
         options?: QuerySelectOptions
     ): Promise<any[]> {
         const table = liveObjectType.prototype?.table
