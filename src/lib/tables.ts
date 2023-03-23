@@ -1,6 +1,6 @@
-import { SpecTableClient } from '@spec.dev/tables'
+import { SpecTableClient, UpsertPayload } from '@spec.dev/tables'
 import { QueryError } from './errors'
-import { QuerySelectOptions, StringKeyMap, QueryAuthOptions, QueryPayload } from './types'
+import { QuerySelectOptions, StringKeyMap, QueryAuthOptions } from './types'
 
 const tableClient = new SpecTableClient()
 
@@ -18,33 +18,23 @@ export async function select(
 }
 
 export async function upsert(
-    table: string,
-    insertData: StringKeyMap | StringKeyMap[],
-    conflictColumns: string[],
-    updateColumns: string[],
+    payload: UpsertPayload,
     authOptions?: QueryAuthOptions
 ): Promise<StringKeyMap[]> {
     try {
-        return tableClient.upsert(
-            table,
-            insertData,
-            conflictColumns,
-            updateColumns,
-            '*',
-            authOptions
-        )
+        return tableClient.upsert(payload, authOptions)
     } catch (err) {
-        throw new QueryError('upsert', table, err)
+        throw new QueryError('upsert', payload?.table, err)
     }
 }
 
 export async function tx(
-    queries: QueryPayload[],
+    payloads: UpsertPayload[],
     authOptions?: QueryAuthOptions
 ): Promise<StringKeyMap[]> {
     try {
-        return tableClient.tx(queries, authOptions)
+        return tableClient.tx(payloads, authOptions)
     } catch (err) {
-        throw new QueryError('tx', 'multiple', err)
+        throw new QueryError('tx', (payloads || []).map((p) => p.table).join(', '), err)
     }
 }

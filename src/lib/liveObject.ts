@@ -164,9 +164,14 @@ class LiveObject {
         const { insertData, conflictColumns, updateColumns } = this.properties.getUpsertComps(this)
 
         // Upsert live object.
-        const records = await upsert(this.table, insertData, conflictColumns, updateColumns, {
-            token: this.tablesApiToken,
-        })
+        const payload = {
+            table: this.table,
+            data: insertData,
+            conflictColumns,
+            updateColumns,
+            returning: '*',
+        }
+        const records = await upsert(payload, { token: this.tablesApiToken })
 
         // Map column names back to propertes and assign values.
         records.length && this.assignProperties(this.properties.fromRecord(records[0]))
@@ -177,7 +182,7 @@ class LiveObject {
 
     async query(
         table: string,
-        where: StringKeyMap | StringKeyMap[],
+        where: StringKeyMap | StringKeyMap[] = [],
         options?: QuerySelectOptions
     ): Promise<any[]> {
         // Convert property names into column names within where conditions and options.

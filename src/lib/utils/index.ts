@@ -1,21 +1,26 @@
 import LiveObject from '../liveObject'
-import { buildUpsertQuery } from '@spec.dev/tables'
-import { QueryPayload } from '../types'
+import { UpsertPayload } from '@spec.dev/tables'
 import { tx } from '../tables'
 
 export async function saveAll(...liveObjects: LiveObject[]) {
-    // Get upsert quries for each live object.
-    const queries: QueryPayload[] = liveObjects.map((liveObject) => {
+    // Get upsert payloads for each live object.
+    const payloads: UpsertPayload[] = liveObjects.map((liveObject) => {
         const { insertData, conflictColumns, updateColumns } =
             liveObject.properties.getUpsertComps(liveObject)
-        return buildUpsertQuery(liveObject.table, [insertData], conflictColumns, updateColumns, '*')
+        return {
+            table: liveObject.table,
+            data: [insertData],
+            conflictColumns,
+            updateColumns,
+            returning: '*',
+        }
     })
 
     // Get tables api token from the first one with it set.
     const authToken = liveObjects.find((liveObject) => !!liveObject.tablesApiToken)?.tablesApiToken
 
     // Upsert all live objects in a single transaction.
-    const results = await tx(queries, { token: authToken || null })
+    const results = await tx(payloads, { token: authToken || null })
 
     // Map column names back to propertes and assign values.
     for (let i = 0; i < results.length; i++) {
