@@ -14,24 +14,26 @@ export {
     QueryAuthOptions,
     QueryPayload,
 }
-
 import { StringKeyMap, SpecEventOrigin, TypedSpecEvent, SpecEvent } from '@spec.types/spec'
 export type Event = SpecEvent
 export type EventOrigin = SpecEventOrigin
 export type TypedEvent<T> = TypedSpecEvent<T>
 export {
     Address,
-    BlockNumber,
     BlockHash,
     TransactionHash,
     Timestamp,
     Json,
-    ChainId,
     StringKeyMap,
     StringMap,
     Block,
     Transaction,
 } from '@spec.types/spec'
+
+export type ChainId = string
+
+import { BigInt } from './helpers'
+export type BlockNumber = BigInt
 
 export type LiveObjectOptions = {
     uniqueBy: string | string[]
