@@ -34,11 +34,8 @@ export {
 } from '@spec.types/spec'
 
 export type LiveObjectOptions = {
-    table: string
-    namespace: string
-    name?: string
-    version?: string
     uniqueBy: string | string[]
+    table?: string
     indexBy?: string | string[]
 }
 

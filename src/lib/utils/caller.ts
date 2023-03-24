@@ -1,3 +1,6 @@
+/*
+https://raw.githubusercontent.com/apiel/caller/master/caller.ts
+*/
 export interface Bind {
     cb?: (file: string) => string
 }
