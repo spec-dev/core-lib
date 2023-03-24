@@ -33,5 +33,10 @@ export function getFile(this: Bind | any, stack: string) {
         const cb = (this as Bind).cb as any
         file = cb(file)
     }
+
+    if (file.startsWith('file://')) {
+        return file.slice(7)
+    }
+
     return file
 }
