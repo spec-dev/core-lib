@@ -51,9 +51,13 @@ export type PropertyOptions = {
     update?: boolean
 }
 
+export type PropertyMetadata = {
+    type: string
+}
+
 export type RegisteredProperty = {
     name: string
-    metadata: any
+    metadata?: PropertyMetadata
     options: PropertyOptions
 }
 
@@ -76,4 +80,13 @@ export type UpsertComps = {
     insertData: StringKeyMap | StringKeyMap[]
     conflictColumns: string[]
     updateColumns: string[]
+}
+
+export type Manifest = {
+    namespace: string
+    name: string
+    version: string
+    displayName: string
+    description: string
+    chains: number[] | string[]
 }

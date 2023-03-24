@@ -9,6 +9,7 @@ import {
     Event,
     EventOrigin,
     StringKeyMap,
+    PropertyMetadata,
 } from './types'
 import { contractEventNamespaceForChainId, schemaForChainId } from '@spec.types/spec'
 import {
@@ -31,6 +32,8 @@ class LiveObject {
     declare options: LiveObjectOptions
 
     declare table: string
+
+    declare propertyMetadata: { [key: string]: PropertyMetadata }
 
     declare propertyRegistry: { [key: string]: RegisteredProperty }
 
@@ -60,6 +63,14 @@ class LiveObject {
 
     constructor(publishEventQueue: PublishEventQueue) {
         this.publishEventQueue = publishEventQueue
+
+        for (const key in this.propertyMetadata || {}) {
+            const metadata = this.propertyMetadata[key] || {}
+            if (this.propertyRegistry.hasOwnProperty(key)) {
+                this.propertyRegistry[key].metadata = metadata
+            }
+        }
+
         this.properties = new Properties(this.propertyRegistry, this.options.uniqueBy)
     }
 

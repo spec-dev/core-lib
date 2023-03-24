@@ -1,6 +1,88 @@
-export function readJsonFile(path: string) {
+import { StringKeyMap, Manifest, PropertyMetadata } from '../types'
+import stripComments from 'strip-comments'
+
+export function readTextFile(path: string): string {
     const decoder = new TextDecoder('utf-8')
     // @ts-ignore
     const data = Deno.readFileSync(path)
-    return JSON.parse(decoder.decode(data))
+    return decoder.decode(data)
+}
+
+export function readJsonFile(path: string): StringKeyMap | StringKeyMap[] {
+    return JSON.parse(readTextFile(path))
+}
+
+export function readManifest(liveObjectSpecPath: string): Manifest {
+    const callerDirComps = liveObjectSpecPath.split('/')
+    callerDirComps.pop()
+    const callerDirPath = callerDirComps.join('/')
+    return readJsonFile(`${callerDirPath}/manifest.json`) as Manifest
+}
+
+export function buildPropertyMetadata(liveObjectSpecPath: string): {
+    [key: string]: PropertyMetadata
+} {
+    // Read Live Object spec.ts file contents.
+    const specFileContents = readTextFile(liveObjectSpecPath)
+    if (!specFileContents) return {}
+
+    // Get property lines of Live Object.
+    const propertyLines = findPropertyLines(specFileContents)
+    if (!propertyLines.length) return {}
+
+    // Parse property name:type info from property lines.
+    const metadata = {}
+    for (const line of propertyLines) {
+        const { name, type } = parsePropertyNameAndTypeFromLine(line)
+        if (name && type) {
+            metadata[name] = { type }
+        }
+    }
+    return metadata
+}
+
+function getLines(contents: string): string[] {
+    return (contents || '').split('\n').map((line) => line.trim())
+}
+
+function findPropertyLines(contents: string): string[] {
+    const lines = getLines(stripComments(contents))
+    const propertyLines: string[] = []
+    let takeNextLine = false
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i]
+
+        // Found property decorator.
+        if (line.startsWith('@Property(')) {
+            takeNextLine = true
+            continue
+        }
+        if (!takeNextLine) continue
+
+        // Another subsequent decorator under @Property.
+        if (line.startsWith('@')) continue
+
+        // Take property line.
+        if (takeNextLine) {
+            propertyLines.push(line)
+            takeNextLine = false
+        }
+    }
+    return propertyLines
+}
+
+function parsePropertyNameAndTypeFromLine(line: string): StringKeyMap {
+    const firstColonIndex = line.indexOf(':')
+    if (firstColonIndex < 1) return { name: null, type: null }
+
+    const preColon = line.slice(0, firstColonIndex)
+    const postColon = line.slice(firstColonIndex)
+
+    const preColonWords = preColon.split(' ')
+    const postColonWords = postColon.split(' ')
+
+    const propertyName = preColonWords.pop()
+    const propertyType = postColonWords[0]
+
+    return { name: propertyName, type: propertyType }
 }

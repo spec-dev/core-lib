@@ -7,7 +7,16 @@ import {
     stringify,
 } from './utils/formatters'
 import { UpsertComps } from './types'
-import { BOOLEAN, isDate, isObject, NUMBER, DATE } from './utils/propertyTypes'
+import {
+    BOOLEAN,
+    isDate,
+    isObject,
+    NUMBER,
+    DATE,
+    BIG_INT,
+    BLOCK_NUMBER,
+} from './utils/propertyTypes'
+import { BigInt } from './helpers'
 
 class Properties {
     protected registry: { [key: string]: RegisteredProperty }
@@ -117,7 +126,7 @@ class Properties {
             if (!columnName) continue
             columnData[columnName] = this.toColumnType(
                 propertyData[propertyName],
-                this.registry[propertyName].metadata?.name?.toLowerCase()
+                this.registry[propertyName].metadata?.type || null
             )
         }
         return columnData
@@ -128,9 +137,9 @@ class Properties {
         for (const columnName in record) {
             const propertyName = this.fromColumnName(columnName)
             if (!propertyName) continue
-            propertyData[propertyName] = this.toColumnType(
+            propertyData[propertyName] = this.fromColumnType(
                 record[columnName],
-                this.registry[propertyName].metadata?.name?.toLowerCase()
+                this.registry[propertyName].metadata?.type || null
             )
         }
         return propertyData
@@ -144,20 +153,23 @@ class Properties {
         return this.columnToPropertyName[name] || null
     }
 
-    toColumnType(value: any, metaType: string | null) {
+    toColumnType(value: any, type: string | null) {
+        const lowerType = type?.toLowerCase()
         if (value === null) return null
         if (isDate(value)) return value.toISOString()
-        if (metaType === NUMBER) return attemptToParseNumber(value)
-        if (metaType === BOOLEAN) return Boolean(value)
+        if (lowerType === NUMBER) return attemptToParseNumber(value)
+        if (lowerType === BOOLEAN) return Boolean(value)
+        if (type === BIG_INT || type === BLOCK_NUMBER) return value.toString()
         if (isObject(value)) return stringify(value)
         return value
     }
 
-    fromColumnType(value: any, metaType: string | null) {
+    fromColumnType(value: any, type: string | null) {
         if (value === null) return null
-        if (metaType === DATE) return attemptToParseDate(value)
-        if (metaType === NUMBER) return attemptToParseNumber(value)
-        if (metaType === BOOLEAN) return Boolean(value)
+        if (type === DATE) return attemptToParseDate(value)
+        if (type === NUMBER) return attemptToParseNumber(value)
+        if (type === BOOLEAN) return Boolean(value)
+        if (type === BIG_INT || type === BLOCK_NUMBER) return BigInt.from(value)
         return value
     }
 
