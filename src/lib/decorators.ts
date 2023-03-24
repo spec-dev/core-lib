@@ -9,8 +9,8 @@ export const DEFAULT_PROPERTY_OPTIONS = {}
 export const DEFAULT_EVENT_HANDLER_OPTIONS = {}
 
 export function Spec(options: LiveObjectOptions): ClassDecorator {
+    console.log('CALLER', caller())
     return function (constructor: Function) {
-        console.log('CALLER', caller())
         options = { ...DEFAULT_LIVE_OBJECT_OPTIONS, ...(options || {}) }
         constructor.prototype.options = options
         constructor.prototype.namespace = options.namespace
