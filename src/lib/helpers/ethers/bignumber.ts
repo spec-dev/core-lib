@@ -164,12 +164,20 @@ export class BigNumber implements Hexable {
         return toBN(this).lte(toBN(other))
     }
 
+    ltZero(): boolean {
+        return this.isNegative()
+    }
+
     gt(other: BigNumberish): boolean {
         return toBN(this).gt(toBN(other))
     }
 
     gte(other: BigNumberish): boolean {
         return toBN(this).gte(toBN(other))
+    }
+
+    gtZero(): boolean {
+        return toBN(this).gt(toBN(0))
     }
 
     isNegative(): boolean {
