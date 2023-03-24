@@ -74,12 +74,16 @@ export class BigNumber implements Hexable {
     add(other: BigNumberish): BigNumber {
         return toBigNumber(toBN(this).add(toBN(other)))
     }
-    plus(other: BigNumberish): BigNumber { return this.add(other) }
+    plus(other: BigNumberish): BigNumber {
+        return this.add(other)
+    }
 
     sub(other: BigNumberish): BigNumber {
         return toBigNumber(toBN(this).sub(toBN(other)))
     }
-    minus(other: BigNumberish): BigNumber { return this.sub(other) }
+    minus(other: BigNumberish): BigNumber {
+        return this.sub(other)
+    }
 
     div(other: BigNumberish): BigNumber {
         const o = BigNumber.from(other)
@@ -92,7 +96,9 @@ export class BigNumber implements Hexable {
     mul(other: BigNumberish): BigNumber {
         return toBigNumber(toBN(this).mul(toBN(other)))
     }
-    times(other: BigNumberish): BigNumber { return this.mul(other) }
+    times(other: BigNumberish): BigNumber {
+        return this.mul(other)
+    }
 
     mod(other: BigNumberish): BigNumber {
         const value = toBN(other)
