@@ -16,6 +16,7 @@
         "stripInternal": true,
         "allowSyntheticDefaultImports": true,
         "noImplicitAny": false,
+        "strictPropertyInitialization": false,
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
     }
