@@ -1,8 +1,8 @@
 import { LiveObjectOptions, PropertyOptions, EventHandlerOptions } from './types'
-import 'reflect-metadata'
 import caller from './utils/caller'
 import { readJsonFile } from './utils/file'
 import { camelToSnake } from './utils/formatters'
+import { Reflect } from './utils/reflect'
 
 export function Spec(options: LiveObjectOptions): ClassDecorator {
     const callerFilePath = caller()
