@@ -1,5 +1,6 @@
 import { LiveObjectOptions, PropertyOptions, EventHandlerOptions, StringKeyMap } from './types'
 import 'reflect-metadata'
+import caller from './utils/caller'
 
 export const DEFAULT_LIVE_OBJECT_OPTIONS = {
     version: '0.0.1',
@@ -9,6 +10,7 @@ export const DEFAULT_EVENT_HANDLER_OPTIONS = {}
 
 export function Spec(options: LiveObjectOptions): ClassDecorator {
     return function (constructor: Function) {
+        console.log('CALLER', caller())
         options = { ...DEFAULT_LIVE_OBJECT_OPTIONS, ...(options || {}) }
         constructor.prototype.options = options
         constructor.prototype.namespace = options.namespace

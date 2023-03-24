@@ -1,5 +1,3 @@
-import { INT8, FLOAT8, VARCHAR, JSON, TIMESTAMPTZ } from './columnTypes'
-
 export const STRING = 'string'
 export const NUMBER = 'number'
 export const BOOLEAN = 'boolean'
