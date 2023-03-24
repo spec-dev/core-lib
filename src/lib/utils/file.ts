@@ -74,15 +74,11 @@ function findPropertyLines(contents: string): string[] {
 function parsePropertyNameAndTypeFromLine(line: string): StringKeyMap {
     const firstColonIndex = line.indexOf(':')
     if (firstColonIndex < 1) return { name: null, type: null }
-
-    const preColon = line.slice(0, firstColonIndex)
-    const postColon = line.slice(firstColonIndex)
-
-    const preColonWords = preColon.split(' ')
-    const postColonWords = postColon.split(' ')
-
+    const preColon = line.slice(0, firstColonIndex).trim()
+    const postColon = line.slice(firstColonIndex + 1).trim()
+    const preColonWords = preColon.split(' ').filter((v) => !!v)
+    const postColonWords = postColon.split(' ').filter((v) => !!v)
     const propertyName = preColonWords.pop()
     const propertyType = postColonWords[0]
-
     return { name: propertyName, type: propertyType }
 }
