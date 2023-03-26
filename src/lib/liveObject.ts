@@ -253,7 +253,7 @@ class LiveObject {
         if (!Object.keys(data).length) {
             console.warn(`Publishing empty data`)
         }
-        this.publishEvent(this.eventName, data)
+        this.publishEvent(this.eventName, this.properties.serialize(data))
     }
 
     publishEvent(name: string, data: StringKeyMap) {

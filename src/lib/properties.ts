@@ -126,6 +126,17 @@ class Properties {
         return withValues
     }
 
+    serialize(propertyData: StringKeyMap): StringKeyMap {
+        const serialized = {}
+        for (const propertyName in propertyData) {
+            serialized[propertyName] = this.toColumnType(
+                propertyData[propertyName],
+                this.registry[propertyName].metadata?.type || null
+            )
+        }
+        return serialized
+    }
+
     toRecord(propertyData: StringKeyMap): StringKeyMap {
         const columnData = {}
         for (const propertyName in propertyData) {
