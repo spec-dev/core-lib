@@ -23,7 +23,6 @@ export function Property(options: PropertyOptions = {}): PropertyDecorator {
     return function (object: any, propertyName: string | symbol) {
         object.constructor.prototype.propertyRegistry =
             object.constructor.prototype.propertyRegistry || {}
-
         object.constructor.prototype.propertyRegistry[propertyName] = {
             name: propertyName,
             options: options,

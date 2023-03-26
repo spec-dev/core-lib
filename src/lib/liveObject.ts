@@ -10,12 +10,15 @@ import {
     EventOrigin,
     StringKeyMap,
     PropertyMetadata,
+    TableSpec,
+    ColumnSpec,
 } from './types'
 import { contractEventNamespaceForChainId, schemaForChainId } from '@spec.types/spec'
 import {
     toNamespacedVersion,
     fromNamespacedVersion,
     removeFirstDotSection,
+    toArrayOfArrays,
 } from './utils/formatters'
 import PublishEventQueue from './publishEventQueue'
 import Properties from './properties'
@@ -71,7 +74,15 @@ class LiveObject {
             }
         }
 
-        this.properties = new Properties(this.propertyRegistry, this.options.uniqueBy)
+        let uniqueBy = Array.isArray(this.options.uniqueBy)
+            ? this.options.uniqueBy
+            : [this.options.uniqueBy]
+
+        if (Array.isArray(uniqueBy[0])) {
+            uniqueBy = uniqueBy[0]
+        }
+
+        this.properties = new Properties(this.propertyRegistry, uniqueBy as string[])
     }
 
     async handleEvent(event: Event) {
@@ -247,6 +258,38 @@ class LiveObject {
 
     publishEvent(name: string, data: StringKeyMap) {
         this.publishEventQueue.push({ name, data })
+    }
+
+    tableSpec(): TableSpec {
+        const uniqueBy = toArrayOfArrays(this.options.uniqueBy || [])
+        const indexBy = toArrayOfArrays(this.options.indexBy || [])
+        const [schema, table] = this.table.split('.')
+        const columnsSchema = this.properties.toSchema()
+
+        const indexGroups = indexBy.map((group) => group.sort().join(':'))
+        const columnSpecs: ColumnSpec[] = []
+        for (const columnName in columnsSchema) {
+            const info = columnsSchema[columnName]
+
+            columnSpecs.push({
+                name: columnName,
+                type: info.type,
+                default: info.default || null,
+                notNull: info.notNull || false,
+            })
+
+            if (info.index && !indexGroups.includes(columnName)) {
+                indexBy.push([columnName])
+            }
+        }
+
+        return {
+            schemaName: schema,
+            tableName: table,
+            columns: columnSpecs,
+            uniqueBy,
+            indexBy,
+        }
     }
 
     _getHandlerForEventName(event: Event): RegisteredEventHandler | null {

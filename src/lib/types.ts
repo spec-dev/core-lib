@@ -36,9 +36,9 @@ import { BigInt } from './helpers'
 export type BlockNumber = BigInt
 
 export type LiveObjectOptions = {
-    uniqueBy: string | string[]
+    uniqueBy: string | string[] | string[][]
     table?: string
-    indexBy?: string | string[]
+    indexBy?: string | string[] | string[][]
 }
 
 export type PropertyOptions = {
@@ -47,8 +47,9 @@ export type PropertyOptions = {
     columnType?: string
     index?: boolean
     default?: any
+    notNull?: boolean
     primaryTimestamp?: boolean
-    update?: boolean
+    canUpdate?: boolean
 }
 
 export type PropertyMetadata = {
@@ -89,4 +90,19 @@ export type Manifest = {
     displayName: string
     description: string
     chains: number[] | string[]
+}
+
+export type ColumnSpec = {
+    name: string
+    type: string
+    default?: string
+    notNull?: boolean
+}
+
+export type TableSpec = {
+    schemaName: string
+    tableName: string
+    columns: ColumnSpec[]
+    uniqueBy?: string[][]
+    indexBy?: string[][]
 }

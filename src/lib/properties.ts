@@ -1,5 +1,11 @@
 import LiveObject from './liveObject'
-import { PropertyOptions, RegisteredProperty, StringKeyMap, StringMap } from './types'
+import {
+    PropertyMetadata,
+    PropertyOptions,
+    RegisteredProperty,
+    StringKeyMap,
+    StringMap,
+} from './types'
 import {
     attemptToParseDate,
     attemptToParseNumber,
@@ -15,6 +21,7 @@ import {
     DATE,
     BIG_INT,
     BLOCK_NUMBER,
+    guessColType,
 } from './utils/propertyTypes'
 import { BigInt } from './helpers'
 
@@ -33,11 +40,11 @@ class Properties {
         return this.uniqueBy.map((propertyName) => this.toColumnName(propertyName) as string)
     }
 
-    constructor(registry: { [key: string]: RegisteredProperty }, uniqueBy: string | string[]) {
+    constructor(registry: { [key: string]: RegisteredProperty }, uniqueBy: string[]) {
         this.registry = registry
         this._buildPropertyColumnNameMappings()
 
-        this.uniqueBy = Array.isArray(uniqueBy) ? uniqueBy : [uniqueBy]
+        this.uniqueBy = uniqueBy
         if (!this.uniqueBy.length) {
             throw 'Live object has no "uniqueBy" properties.'
         }
@@ -183,6 +190,24 @@ class Properties {
         return columnData
     }
 
+    toSchema(): StringKeyMap {
+        const schema = {}
+        for (const propertyName in this.registry) {
+            const columnName = this.toColumnName(propertyName) as string
+            const info = this.registry[propertyName] || {}
+            const metadata = info.metadata || ({} as PropertyMetadata)
+            const options = info.options || ({} as PropertyOptions)
+            const columnType = options.columnType || guessColType(metadata.type)
+            schema[columnName] = {
+                type: columnType,
+                index: options.index,
+                default: options.default,
+                notNull: options.notNull,
+            }
+        }
+        return schema
+    }
+
     isUnique(name: string): boolean {
         return this.uniqueBy.includes(name)
     }
@@ -190,7 +215,7 @@ class Properties {
     canUpdate(name: string): boolean {
         const options = this.options(name)
         if (!options) return false
-        return options.update !== false
+        return options.canUpdate !== false
     }
 
     options(name: string): PropertyOptions | null {

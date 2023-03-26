@@ -85,3 +85,11 @@ export const attemptToParseDate = (originalValue: any): any => {
         return originalValue
     }
 }
+
+export function toArrayOfArrays(value: string | string[] | string[][]): string[][] {
+    let resolvedValue = Array.isArray(value) ? value : [value]
+    if (!Array.isArray(resolvedValue[0])) {
+        resolvedValue = [resolvedValue] as string[][]
+    }
+    return resolvedValue as string[][]
+}
