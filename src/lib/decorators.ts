@@ -9,21 +9,21 @@ export function Spec(options: LiveObjectOptions): ClassDecorator {
     const propertyMetadata = buildPropertyMetadata(callerFilePath)
 
     return function (constructor: Function) {
-        constructor.prototype.propertyMetadata = propertyMetadata
-        constructor.prototype.options = options
-        constructor.prototype.namespace = manifest.namespace
-        constructor.prototype.liveObjectName = manifest.name
-        constructor.prototype.version = manifest.version
-        constructor.prototype.table =
+        constructor.prototype._propertyMetadata = propertyMetadata
+        constructor.prototype._options = options
+        constructor.prototype._liveObjectNsp = manifest.namespace
+        constructor.prototype._liveObjectName = manifest.name
+        constructor.prototype._liveObjectVersion = manifest.version
+        constructor.prototype._table =
             options.table || [manifest.namespace, camelToSnake(manifest.name)].join('.')
     }
 }
 
 export function Property(options: PropertyOptions = {}): PropertyDecorator {
     return function (object: any, propertyName: string | symbol) {
-        object.constructor.prototype.propertyRegistry =
-            object.constructor.prototype.propertyRegistry || {}
-        object.constructor.prototype.propertyRegistry[propertyName] = {
+        object.constructor.prototype._propertyRegistry =
+            object.constructor.prototype._propertyRegistry || {}
+        object.constructor.prototype._propertyRegistry[propertyName] = {
             name: propertyName,
             options: options,
         }
@@ -32,16 +32,16 @@ export function Property(options: PropertyOptions = {}): PropertyDecorator {
 
 export function OnEvent(eventName: string, options: EventHandlerOptions = {}): PropertyDecorator {
     return function (object: any, methodName: string | symbol) {
-        object.constructor.prototype.eventHandlers =
-            object.constructor.prototype.eventHandlers || {}
-        object.constructor.prototype.eventHandlers[eventName] = { methodName, options }
+        object.constructor.prototype._eventHandlers =
+            object.constructor.prototype._eventHandlers || {}
+        object.constructor.prototype._eventHandlers[eventName] = { methodName, options }
     }
 }
 
 export function OnAllEvents(): PropertyDecorator {
     return function (object: any, methodName: string | symbol) {
-        object.constructor.prototype.beforeEventHandlers =
-            object.constructor.prototype.beforeEventHandlers || []
-        object.constructor.prototype.beforeEventHandlers.push(methodName)
+        object.constructor.prototype._beforeEventHandlers =
+            object.constructor.prototype._beforeEventHandlers || []
+        object.constructor.prototype._beforeEventHandlers.push(methodName)
     }
 }

@@ -6,9 +6,9 @@ export async function saveAll(...liveObjects: LiveObject[]) {
     // Get upsert payloads for each live object.
     const payloads: UpsertPayload[] = liveObjects.map((liveObject) => {
         const { insertData, conflictColumns, updateColumns } =
-            liveObject.properties.getUpsertComps(liveObject)
+            liveObject._properties.getUpsertComps(liveObject)
         return {
-            table: liveObject.table,
+            table: liveObject._table,
             data: [insertData],
             conflictColumns,
             updateColumns,
@@ -17,7 +17,9 @@ export async function saveAll(...liveObjects: LiveObject[]) {
     })
 
     // Get tables api token from the first one with it set.
-    const authToken = liveObjects.find((liveObject) => !!liveObject.tablesApiToken)?.tablesApiToken
+    const authToken = liveObjects.find(
+        (liveObject) => !!liveObject._tablesApiToken
+    )?._tablesApiToken
 
     // Upsert all live objects in a single transaction.
     const results = await tx(payloads, { token: authToken || null })
@@ -26,7 +28,7 @@ export async function saveAll(...liveObjects: LiveObject[]) {
     for (let i = 0; i < results.length; i++) {
         const records = results[i]
         if (!records?.length) continue
-        liveObjects[i].assignProperties(liveObjects[i].properties.fromRecord(records[0]))
+        liveObjects[i].assignProperties(liveObjects[i]._properties.fromRecord(records[0]))
         liveObjects[i].publishChange()
     }
 }

@@ -26,23 +26,23 @@ import { upsert, select } from './tables'
 import humps from './utils/humps'
 
 class LiveObject {
-    declare namespace: string
+    declare _liveObjectNsp: string
 
-    declare liveObjectName: string
+    declare _liveObjectName: string
 
-    declare version: string
+    declare _liveObjectVersion: string
 
-    declare options: LiveObjectOptions
+    declare _options: LiveObjectOptions
 
-    declare table: string
+    declare _table: string
 
-    declare propertyMetadata: { [key: string]: PropertyMetadata }
+    declare _propertyMetadata: { [key: string]: PropertyMetadata }
 
-    declare propertyRegistry: { [key: string]: RegisteredProperty }
+    declare _propertyRegistry: { [key: string]: RegisteredProperty }
 
-    declare eventHandlers: { [key: string]: RegisteredEventHandler }
+    declare _eventHandlers: { [key: string]: RegisteredEventHandler }
 
-    declare beforeEventHandlers: string[]
+    declare _beforeEventHandlers: string[]
 
     declare currentBlock: Block
 
@@ -50,39 +50,43 @@ class LiveObject {
 
     declare currentEventOrigin: EventOrigin
 
-    publishEventQueue: PublishEventQueue
+    _publishEventQueue: PublishEventQueue
 
-    properties: Properties
+    _properties: Properties
 
-    tablesApiToken: string | null = null
+    _tablesApiToken: string | null = null
 
-    get eventName(): string {
-        return toNamespacedVersion(this.namespace, `${this.liveObjectName}Upserted`, this.version)
+    get _eventName(): string {
+        return toNamespacedVersion(
+            this._liveObjectNsp,
+            `${this._liveObjectName}Upserted`,
+            this._liveObjectVersion
+        )
     }
 
     get publishedEvents(): StringKeyMap[] {
-        return this.publishEventQueue.items()
+        return this._publishEventQueue.items()
     }
 
     constructor(publishEventQueue: PublishEventQueue) {
-        this.publishEventQueue = publishEventQueue
+        this._publishEventQueue = publishEventQueue
 
-        for (const key in this.propertyMetadata || {}) {
-            const metadata = this.propertyMetadata[key] || {}
-            if (this.propertyRegistry.hasOwnProperty(key)) {
-                this.propertyRegistry[key].metadata = metadata
+        for (const key in this._propertyMetadata || {}) {
+            const metadata = this._propertyMetadata[key] || {}
+            if (this._propertyRegistry.hasOwnProperty(key)) {
+                this._propertyRegistry[key].metadata = metadata
             }
         }
 
-        let uniqueBy = Array.isArray(this.options.uniqueBy)
-            ? this.options.uniqueBy
-            : [this.options.uniqueBy]
+        let uniqueBy = Array.isArray(this._options.uniqueBy)
+            ? this._options.uniqueBy
+            : [this._options.uniqueBy]
 
         if (Array.isArray(uniqueBy[0])) {
             uniqueBy = uniqueBy[0]
         }
 
-        this.properties = new Properties(this.propertyRegistry, uniqueBy as string[])
+        this._properties = new Properties(this._propertyRegistry, uniqueBy as string[])
     }
 
     async handleEvent(event: Event) {
@@ -103,8 +107,8 @@ class LiveObject {
 
     new(liveObjectType, initialProperties: StringKeyMap = {}) {
         // Create new live object and pass event response queue for execution context.
-        const newLiveObject = new liveObjectType(this.publishEventQueue)
-        newLiveObject.tablesApiToken = this.tablesApiToken
+        const newLiveObject = new liveObjectType(this._publishEventQueue)
+        newLiveObject._tablesApiToken = this._tablesApiToken
 
         // Assign any initial properties given.
         for (const propertyName in initialProperties) {
@@ -118,12 +122,12 @@ class LiveObject {
         where: StringKeyMap | StringKeyMap[] = [],
         options?: QuerySelectOptions
     ): Promise<any[]> {
-        const table = liveObjectType.prototype?.table
+        const table = liveObjectType.prototype?._table
         if (!table) throw `Type has no table to query`
 
         // Convert property names into column names within where conditions and options.
         const filters = (Array.isArray(where) ? where : [where]).map((filter) =>
-            this.properties.toColumnKeys(filter)
+            this._properties.toColumnKeys(filter)
         )
         if (options?.orderBy?.column) {
             const orderByColumns = Array.isArray(options.orderBy.column)
@@ -131,7 +135,7 @@ class LiveObject {
                 : [options.orderBy.column]
 
             const orderByColumnNames = orderByColumns
-                .map((c) => this.properties.toColumnName(c))
+                .map((c) => this._properties.toColumnName(c))
                 .filter((v) => !!v) as string[]
 
             if (orderByColumnNames.length) {
@@ -143,13 +147,13 @@ class LiveObject {
 
         // Find records.
         const records =
-            (await select(table, filters, options, { token: this.tablesApiToken })) || []
+            (await select(table, filters, options, { token: this._tablesApiToken })) || []
 
         // Convert back into live object type / property types.
         return records.map((record) => {
-            const liveObject = new liveObjectType(this.publishEventQueue)
-            liveObject.tablesApiToken = this.tablesApiToken
-            const propertyData = liveObject.properties.fromRecord(record)
+            const liveObject = new liveObjectType(this._publishEventQueue)
+            liveObject._tablesApiToken = this._tablesApiToken
+            const propertyData = liveObject._properties.fromRecord(record)
             liveObject.assignProperties(propertyData)
             return liveObject
         })
@@ -169,40 +173,40 @@ class LiveObject {
         // Find this live object by its unique properties.
         const records =
             (await select(
-                this.table,
-                this.properties.getLoadFilters(this),
+                this._table,
+                this._properties.getLoadFilters(this),
                 { limit: 1 },
-                { token: this.tablesApiToken }
+                { token: this._tablesApiToken }
             )) || []
 
         // Assign retrieved property values if record existed.
         const exists = records.length > 0
-        exists && this.assignProperties(this.properties.fromRecord(records[0]))
+        exists && this.assignProperties(this._properties.fromRecord(records[0]))
         return exists
     }
 
     async save() {
         // Ensure properties have changed since last snapshot.
-        if (!this.properties.haveChanged(this)) {
+        if (!this._properties.haveChanged(this)) {
             console.warn('No properties have changed - not saving')
             return
         }
 
         // Get upsert components.
-        const { insertData, conflictColumns, updateColumns } = this.properties.getUpsertComps(this)
+        const { insertData, conflictColumns, updateColumns } = this._properties.getUpsertComps(this)
 
         // Upsert live object.
         const payload = {
-            table: this.table,
+            table: this._table,
             data: insertData,
             conflictColumns,
             updateColumns,
             returning: '*',
         }
-        const records = await upsert(payload, { token: this.tablesApiToken })
+        const records = await upsert(payload, { token: this._tablesApiToken })
 
         // Map column names back to propertes and assign values.
-        records.length && this.assignProperties(this.properties.fromRecord(records[0]))
+        records.length && this.assignProperties(this._properties.fromRecord(records[0]))
 
         // Publish event stating that this live object was upserted.
         this.publishChange()
@@ -215,7 +219,7 @@ class LiveObject {
     ): Promise<any[]> {
         const filters = Array.isArray(where) ? where : [where]
         const records =
-            (await select(table, filters, options, { token: this.tablesApiToken })) || []
+            (await select(table, filters, options, { token: this._tablesApiToken })) || []
         return humps.camelizeKeys(records)
     }
 
@@ -244,27 +248,27 @@ class LiveObject {
         for (const propertyName in data) {
             this[propertyName] = data[propertyName]
         }
-        this.properties.capture(this)
+        this._properties.capture(this)
     }
 
     publishChange() {
-        const data = this.properties.snapshot
+        const data = this._properties.snapshot
         if (!data) throw `Can't publish a live object change that hasn't been persisted yet.`
         if (!Object.keys(data).length) {
             console.warn(`Publishing empty data`)
         }
-        this.publishEvent(this.eventName, this.properties.serialize(data))
+        this.publishEvent(this._eventName, this._properties.serialize(data))
     }
 
     publishEvent(name: string, data: StringKeyMap) {
-        this.publishEventQueue.push({ name, data })
+        this._publishEventQueue.push({ name, data })
     }
 
     tableSpec(): TableSpec {
-        const uniqueBy = toArrayOfArrays(this.options.uniqueBy || [])
-        const indexBy = toArrayOfArrays(this.options.indexBy || [])
-        const [schema, table] = this.table.split('.')
-        const columnsSchema = this.properties.toSchema()
+        const uniqueBy = toArrayOfArrays(this._options.uniqueBy || [])
+        const indexBy = toArrayOfArrays(this._options.indexBy || [])
+        const [schema, table] = this._table.split('.')
+        const columnsSchema = this._properties.toSchema()
 
         const indexGroups = indexBy.map((group) => group.sort().join(':'))
         const columnSpecs: ColumnSpec[] = []
@@ -294,13 +298,13 @@ class LiveObject {
 
     _getHandlerForEventName(event: Event): RegisteredEventHandler | null {
         // Try matching against full event name first.
-        let handler = this.eventHandlers[event.name]
+        let handler = this._eventHandlers[event.name]
         if (handler) return handler
 
         // Try removing version next.
         const { nsp, name } = fromNamespacedVersion(event.name)
         const eventNameWithoutVersion = [nsp, name].join('.')
-        handler = this.eventHandlers[eventNameWithoutVersion]
+        handler = this._eventHandlers[eventNameWithoutVersion]
         if (handler) return handler
 
         // It must be a contract event at this point.
@@ -311,14 +315,14 @@ class LiveObject {
 
         // Check if chain prefix of contract event name is missing.
         handler =
-            this.eventHandlers[removeFirstDotSection(event.name)] ||
-            this.eventHandlers[removeFirstDotSection(eventNameWithoutVersion)]
+            this._eventHandlers[removeFirstDotSection(event.name)] ||
+            this._eventHandlers[removeFirstDotSection(eventNameWithoutVersion)]
 
         return handler || null
     }
 
     async _performBeforeEventHandlers(event: Event) {
-        const methodNames = this.beforeEventHandlers || []
+        const methodNames = this._beforeEventHandlers || []
         for (const methodName of methodNames) {
             const beforeEventHandler = ((this as StringKeyMap)[methodName] as EventHandler).bind(
                 this
