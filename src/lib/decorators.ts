@@ -12,7 +12,7 @@ export function Spec(options: LiveObjectOptions): ClassDecorator {
         constructor.prototype.propertyMetadata = propertyMetadata
         constructor.prototype.options = options
         constructor.prototype.namespace = manifest.namespace
-        constructor.prototype.name = manifest.name
+        constructor.prototype.liveObjectName = manifest.name
         constructor.prototype.version = manifest.version
         constructor.prototype.table =
             options.table || [manifest.namespace, camelToSnake(manifest.name)].join('.')

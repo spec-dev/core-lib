@@ -28,7 +28,7 @@ import humps from './utils/humps'
 class LiveObject {
     declare namespace: string
 
-    declare name: string
+    declare liveObjectName: string
 
     declare version: string
 
@@ -57,7 +57,7 @@ class LiveObject {
     tablesApiToken: string | null = null
 
     get eventName(): string {
-        return toNamespacedVersion(this.namespace, `${this.name}Upserted`, this.version)
+        return toNamespacedVersion(this.namespace, `${this.liveObjectName}Upserted`, this.version)
     }
 
     get publishedEvents(): StringKeyMap[] {
