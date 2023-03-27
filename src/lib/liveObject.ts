@@ -64,7 +64,7 @@ class LiveObject {
         )
     }
 
-    get publishedEvents(): StringKeyMap[] {
+    get _publishedEvents(): StringKeyMap[] {
         return this._publishEventQueue.items()
     }
 
