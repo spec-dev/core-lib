@@ -47,7 +47,7 @@ export function guessColType(t: string): string {
 
         // Datetimes
         case DATE:
-        case TIMESTAMP:
+        case TIMESTAMP.toLowerCase():
             return TIMESTAMPTZ
 
         // JSON
