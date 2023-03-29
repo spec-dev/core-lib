@@ -265,10 +265,37 @@ class LiveObject {
     }
 
     tableSpec(): TableSpec {
-        const uniqueBy = toArrayOfArrays(this._options.uniqueBy || [])
-        const indexBy = toArrayOfArrays(this._options.indexBy || [])
+        const indexByProperties = toArrayOfArrays(this._options.indexBy || [])
+        const uniqueByProperties = toArrayOfArrays(this._options.uniqueBy || [])
         const [schema, table] = this._table.split('.')
         const columnsSchema = this._properties.toSchema()
+        const columnNames = new Set(Object.keys(columnsSchema))
+
+        const indexBy: string[][] = []
+        for (const groupPropertyNames of indexByProperties) {
+            const groupColumnNames: string[] = []
+            for (const propertyName of groupPropertyNames) {
+                const columnName = this._properties.toColumnName(propertyName)
+                if (!columnName || !columnNames.has(columnName)) {
+                    throw `"indexBy" references unknown property: "${propertyName}"`
+                }
+                groupColumnNames.push(columnName)
+            }
+            groupColumnNames.length && indexBy.push(groupColumnNames)
+        }
+
+        const uniqueBy: string[][] = []
+        for (const groupPropertyNames of uniqueByProperties) {
+            const groupColumnNames: string[] = []
+            for (const propertyName of groupPropertyNames) {
+                const columnName = this._properties.toColumnName(propertyName)
+                if (!columnName || !columnNames.has(columnName)) {
+                    throw `"uniqueBy" references unknown property: "${propertyName}"`
+                }
+                groupColumnNames.push(columnName)
+            }
+            groupColumnNames.length && uniqueBy.push(groupColumnNames)
+        }
 
         const indexGroups = indexBy.map((group) => group.sort().join(':'))
         const columnSpecs: ColumnSpec[] = []
