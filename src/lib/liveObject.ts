@@ -384,30 +384,25 @@ class LiveObject {
     }
 
     _getCallHandlerForFunctionName(call: Call): RegisteredCallHandler | null {
-        // "eth.nsp.contract.func"
+        // "eth.contracts.nsp.contract.func"
         const properFunctionName = call.name
         const splitProperFunctionName = properFunctionName.split('.')
         const chainNsp = splitProperFunctionName[0]
 
-        // "eth.contracts.nsp.contract.func"
-        const functionNameWithContractsNsp = [
-            chainNsp,
-            CONTRACTS_NSP,
-            ...splitProperFunctionName.slice(1),
-        ].join('.')
-        // "nsp.contract.func"
-        const chainAgnosticFunctionName = splitProperFunctionName.slice(1).join('.')
         // "contracts.nsp.contract.func"
-        const chainAgnosticFunctionNameWithContractsNsp = [
-            CONTRACTS_NSP,
-            chainAgnosticFunctionName,
-        ].join('.')
+        const chainAgnosticFunctionNameWithContractsNsp = splitProperFunctionName.slice(1).join('.')
+
+        // "nsp.contract.func"
+        const chainAgnosticFunctionName = splitProperFunctionName.slice(2).join('.')
+
+        // "eth.nsp.contract.func"
+        const nissingContractsNspFunctionName = [chainNsp, chainAgnosticFunctionName].join('.')
 
         return (
             this._callHandlers[properFunctionName] ||
-            this._callHandlers[functionNameWithContractsNsp] ||
-            this._callHandlers[chainAgnosticFunctionName] ||
             this._callHandlers[chainAgnosticFunctionNameWithContractsNsp] ||
+            this._callHandlers[chainAgnosticFunctionName] ||
+            this._callHandlers[nissingContractsNspFunctionName] ||
             null
         )
     }
