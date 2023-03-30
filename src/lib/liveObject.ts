@@ -223,10 +223,7 @@ class LiveObject {
 
     async save() {
         // Ensure properties have changed since last snapshot.
-        if (!this._properties.haveChanged(this)) {
-            console.warn('No properties have changed - not saving')
-            return
-        }
+        if (!this._properties.haveChanged(this)) return
 
         // Get upsert components.
         const { insertData, conflictColumns, updateColumns } = this._properties.getUpsertComps(this)
