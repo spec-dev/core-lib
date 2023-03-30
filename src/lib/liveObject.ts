@@ -15,7 +15,7 @@ import {
     ColumnSpec,
     CallHandler,
 } from './types'
-import { contractEventNamespaceForChainId, schemaForChainId } from '@spec.types/spec'
+import { CONTRACTS_NSP, contractEventNamespaceForChainId, schemaForChainId } from '@spec.types/spec'
 import {
     toNamespacedVersion,
     fromNamespacedVersion,
@@ -384,9 +384,24 @@ class LiveObject {
     }
 
     _getCallHandlerForFunctionName(call: Call): RegisteredCallHandler | null {
-        const chainAgnosticFunctionName = call.name.split('.').slice(1).join('.')
+        // "eth.nsp.contract.func"
+        const properFunctionName = call.name
+        const splitProperFunctionName = properFunctionName.split('.')
+        const chainNsp = splitProperFunctionName[0]
+
+        // "eth.contracts.nsp.contract.func"
+        const functionNameWithContractsNsp = [chainNsp, CONTRACTS_NSP, ...splitProperFunctionName.slice(1)].join('.')
+        // "nsp.contract.func"
+        const chainAgnosticFunctionName = splitProperFunctionName.slice(1).join('.')
+        // "contracts.nsp.contract.func"
+        const chainAgnosticFunctionNameWithContractsNsp = [CONTRACTS_NSP, chainAgnosticFunctionName].join('.')
+
         return (
-            this._callHandlers[call.name] || this._callHandlers[chainAgnosticFunctionName] || null
+            this._callHandlers[properFunctionName] || 
+            this._callHandlers[functionNameWithContractsNsp] ||
+            this._callHandlers[chainAgnosticFunctionName] ||
+            this._callHandlers[chainAgnosticFunctionNameWithContractsNsp] || 
+            null
         )
     }
 
