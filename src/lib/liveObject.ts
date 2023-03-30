@@ -15,7 +15,7 @@ import {
     ColumnSpec,
     CallHandler,
 } from './types'
-import { CONTRACTS_NSP, contractEventNamespaceForChainId, schemaForChainId } from '@spec.types/spec'
+import { CONTRACTS_NSP, schemaForChainId } from '@spec.types/spec'
 import {
     toNamespacedVersion,
     fromNamespacedVersion,
@@ -369,11 +369,8 @@ class LiveObject {
         handler = this._eventHandlers[eventNameWithoutVersion]
         if (handler) return handler
 
-        // It must be a contract event at this point.
-        const contractEventNamespace = contractEventNamespaceForChainId(event.origin.chainId)
-        const isContractEvent =
-            contractEventNamespace && nsp.startsWith(`${contractEventNamespace}.`)
-        if (!isContractEvent) return null
+        // NOTE: It must be a contract event that's chain-agnostic at this point.
+        if (!event.name.startsWith(`${CONTRACTS_NSP}.`)) return null
 
         // Check if chain prefix of contract event name is missing.
         handler =
