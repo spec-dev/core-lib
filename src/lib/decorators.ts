@@ -1,4 +1,9 @@
-import { LiveObjectOptions, PropertyOptions, EventHandlerOptions } from './types'
+import {
+    LiveObjectOptions,
+    PropertyOptions,
+    EventHandlerOptions,
+    CallHandlerOptions,
+} from './types'
 import caller from './utils/caller'
 import { readManifest, buildPropertyMetadata } from './utils/file'
 import { camelToSnake } from './utils/formatters'
@@ -43,5 +48,21 @@ export function OnAllEvents(): PropertyDecorator {
         object.constructor.prototype._beforeEventHandlers =
             object.constructor.prototype._beforeEventHandlers || []
         object.constructor.prototype._beforeEventHandlers.push(methodName)
+    }
+}
+
+export function OnCall(functionName: string, options: CallHandlerOptions = {}): PropertyDecorator {
+    return function (object: any, methodName: string | symbol) {
+        object.constructor.prototype._callHandlers =
+            object.constructor.prototype._callHandlers || {}
+        object.constructor.prototype._callHandlers[functionName] = { methodName, options }
+    }
+}
+
+export function OnAllCalls(): PropertyDecorator {
+    return function (object: any, methodName: string | symbol) {
+        object.constructor.prototype._beforeCallHandlers =
+            object.constructor.prototype._beforeCallHandlers || []
+        object.constructor.prototype._beforeCallHandlers.push(methodName)
     }
 }

@@ -2,16 +2,18 @@ import {
     LiveObjectOptions,
     EventHandler,
     RegisteredEventHandler,
+    RegisteredCallHandler,
     QuerySelectOptions,
     RegisteredProperty,
     Block,
     Transaction,
     Event,
-    EventOrigin,
+    Call,
     StringKeyMap,
     PropertyMetadata,
     TableSpec,
     ColumnSpec,
+    CallHandler,
 } from './types'
 import { contractEventNamespaceForChainId, schemaForChainId } from '@spec.types/spec'
 import {
@@ -42,13 +44,17 @@ class LiveObject {
 
     declare _eventHandlers: { [key: string]: RegisteredEventHandler }
 
+    declare _callHandlers: { [key: string]: RegisteredCallHandler }
+
     declare _beforeEventHandlers: string[]
+
+    declare _beforeCallHandlers: string[]
 
     declare currentBlock: Block
 
     declare currentTransaction: Transaction
 
-    declare currentEventOrigin: EventOrigin
+    declare currentOrigin: StringKeyMap
 
     _publishEventQueue: PublishEventQueue
 
@@ -89,20 +95,50 @@ class LiveObject {
         this._properties = new Properties(this._propertyRegistry, uniqueBy as string[])
     }
 
-    async handleEvent(event: Event) {
-        this.currentEventOrigin = event.origin
+    async handleEvent(event: Event): Promise<boolean> {
+        this.currentOrigin = event.origin
 
         // Get event handler method by name.
-        const handler = this._getHandlerForEventName(event)
+        const handler = this._getEventHandlerForEventName(event)
         if (!handler) throw `No event handler registered for event ${event.name}`
 
         // Ensure it actually exists on this.
         const method = ((this as StringKeyMap)[handler.methodName] as EventHandler).bind(this)
         if (!method) throw `Live object event handler is not callable: this[${handler.methodName}]`
 
+        // Don't replay events restricted from doing so.
+        const eventIsReplay = (event.origin as StringKeyMap).replay
+        if (eventIsReplay && handler.options?.canReplay === false) {
+            return false
+        }
+
         // Execute all "before-event" handlers and then call the actual handler itself.
         await this._performBeforeEventHandlers(event)
         await method(event)
+        return true
+    }
+
+    async handleCall(call: Call): Promise<boolean> {
+        this.currentOrigin = call.origin
+
+        // Get call handler method by name.
+        const handler = this._getCallHandlerForFunctionName(call)
+        if (!handler) throw `No call handler registered for function ${call.name}`
+
+        // Ensure it actually exists on this.
+        const method = ((this as StringKeyMap)[handler.methodName] as CallHandler).bind(this)
+        if (!method) throw `Live object call handler is not callable: this[${handler.methodName}]`
+
+        // Don't replay events restricted from doing so.
+        const callIsReplay = (call.origin as StringKeyMap).replay
+        if (callIsReplay && handler.options?.canReplay === false) {
+            return false
+        }
+
+        // Execute all "before-call" handlers and then call the actual handler itself.
+        await this._performBeforeCallHandlers(call)
+        await method(call)
+        return true
     }
 
     new(liveObjectType, initialProperties: StringKeyMap = {}) {
@@ -225,7 +261,7 @@ class LiveObject {
 
     async getCurrentBlock(): Promise<Block> {
         if (this.currentBlock) return this.currentBlock
-        const { chainId, blockHash } = this.currentEventOrigin
+        const { chainId, blockHash } = this.currentOrigin
         const tablePath = [schemaForChainId[chainId], 'blocks'].join('.')
         const records = await this.query(tablePath, { hash: blockHash }, { limit: 1 })
         this.currentBlock = records[0]
@@ -234,7 +270,7 @@ class LiveObject {
 
     async getCurrentTransaction(): Promise<Transaction> {
         if (this.currentTransaction) return this.currentTransaction
-        const { chainId, transactionHash } = this.currentEventOrigin
+        const { chainId, transactionHash } = this.currentOrigin
         const tablePath = [schemaForChainId[chainId], 'transactions'].join('.')
         const records = await this.query(tablePath, { hash: transactionHash }, { limit: 1 })
         this.currentTransaction = records[0]
@@ -301,12 +337,11 @@ class LiveObject {
         const columnSpecs: ColumnSpec[] = []
         for (const columnName in columnsSchema) {
             const info = columnsSchema[columnName]
-
             columnSpecs.push({
                 name: columnName,
                 type: info.type,
-                default: info.default || null,
-                notNull: info.notNull || false,
+                default: info.default,
+                notNull: info.notNull,
             })
 
             if (info.index && !indexGroups.includes(columnName)) {
@@ -323,7 +358,7 @@ class LiveObject {
         }
     }
 
-    _getHandlerForEventName(event: Event): RegisteredEventHandler | null {
+    _getEventHandlerForEventName(event: Event): RegisteredEventHandler | null {
         // Try matching against full event name first.
         let handler = this._eventHandlers[event.name]
         if (handler) return handler
@@ -348,6 +383,13 @@ class LiveObject {
         return handler || null
     }
 
+    _getCallHandlerForFunctionName(call: Call): RegisteredCallHandler | null {
+        const chainAgnosticFunctionName = call.name.split('.').slice(1).join('.')
+        return (
+            this._callHandlers[call.name] || this._callHandlers[chainAgnosticFunctionName] || null
+        )
+    }
+
     async _performBeforeEventHandlers(event: Event) {
         const methodNames = this._beforeEventHandlers || []
         for (const methodName of methodNames) {
@@ -357,6 +399,16 @@ class LiveObject {
             if (!beforeEventHandler)
                 throw `Live object before-event handler is not callable: this[${methodName}]`
             await beforeEventHandler(event)
+        }
+    }
+
+    async _performBeforeCallHandlers(call: Call) {
+        const methodNames = this._beforeCallHandlers || []
+        for (const methodName of methodNames) {
+            const beforeCallHandler = ((this as StringKeyMap)[methodName] as CallHandler).bind(this)
+            if (!beforeCallHandler)
+                throw `Live object before-call handler is not callable: this[${methodName}]`
+            await beforeCallHandler(call)
         }
     }
 }

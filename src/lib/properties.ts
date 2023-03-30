@@ -210,11 +210,15 @@ class Properties {
             const metadata = info.metadata || ({} as PropertyMetadata)
             const options = info.options || ({} as PropertyOptions)
             const columnType = options.columnType || guessColType(metadata.type)
+            const defaultValue = options.hasOwnProperty('default')
+                ? options.default.toString()
+                : null
+
             schema[columnName] = {
                 type: columnType,
                 index: options.index,
-                default: options.default,
-                notNull: options.notNull,
+                default: defaultValue,
+                notNull: options.notNull || false,
             }
         }
         return schema

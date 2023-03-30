@@ -14,10 +14,19 @@ export {
     QueryAuthOptions,
     QueryPayload,
 }
-import { StringKeyMap, SpecEventOrigin, TypedSpecEvent, SpecEvent } from '@spec.types/spec'
+import {
+    StringKeyMap,
+    SpecEventOrigin,
+    TypedSpecEvent,
+    SpecEvent,
+    SpecCall,
+    SpecCallOrigin,
+} from '@spec.types/spec'
 export type Event = SpecEvent
 export type EventOrigin = SpecEventOrigin
 export type TypedEvent<T> = TypedSpecEvent<T>
+export type Call = SpecCall
+export type CallOrigin = SpecCallOrigin
 export {
     Address,
     BlockHash,
@@ -62,7 +71,9 @@ export type RegisteredProperty = {
     options: PropertyOptions
 }
 
-export type EventHandlerOptions = {}
+export type EventHandlerOptions = {
+    canReplay?: boolean
+}
 
 export type EventHandler = (event: Event) => Promise<void>
 
@@ -75,6 +86,17 @@ export type EventNameComps = {
 export type RegisteredEventHandler = {
     methodName: string
     options: EventHandlerOptions
+}
+
+export type CallHandlerOptions = {
+    canReplay?: boolean
+}
+
+export type CallHandler = (call: Call) => Promise<void>
+
+export type RegisteredCallHandler = {
+    methodName: string
+    options: CallHandlerOptions
 }
 
 export type UpsertComps = {
