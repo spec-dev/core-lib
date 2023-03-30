@@ -390,17 +390,24 @@ class LiveObject {
         const chainNsp = splitProperFunctionName[0]
 
         // "eth.contracts.nsp.contract.func"
-        const functionNameWithContractsNsp = [chainNsp, CONTRACTS_NSP, ...splitProperFunctionName.slice(1)].join('.')
+        const functionNameWithContractsNsp = [
+            chainNsp,
+            CONTRACTS_NSP,
+            ...splitProperFunctionName.slice(1),
+        ].join('.')
         // "nsp.contract.func"
         const chainAgnosticFunctionName = splitProperFunctionName.slice(1).join('.')
         // "contracts.nsp.contract.func"
-        const chainAgnosticFunctionNameWithContractsNsp = [CONTRACTS_NSP, chainAgnosticFunctionName].join('.')
+        const chainAgnosticFunctionNameWithContractsNsp = [
+            CONTRACTS_NSP,
+            chainAgnosticFunctionName,
+        ].join('.')
 
         return (
-            this._callHandlers[properFunctionName] || 
+            this._callHandlers[properFunctionName] ||
             this._callHandlers[functionNameWithContractsNsp] ||
             this._callHandlers[chainAgnosticFunctionName] ||
-            this._callHandlers[chainAgnosticFunctionNameWithContractsNsp] || 
+            this._callHandlers[chainAgnosticFunctionNameWithContractsNsp] ||
             null
         )
     }
