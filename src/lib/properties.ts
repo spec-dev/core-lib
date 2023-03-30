@@ -178,8 +178,7 @@ class Properties {
         if (lowerType === NUMBER) return attemptToParseNumber(value)
         if (lowerType === BOOLEAN) return Boolean(value)
         if (type === BIG_INT || type === BLOCK_NUMBER) return value.toString()
-        if (isObject(value)) return stringify(value)
-        return value
+        return stringify(value)
     }
 
     fromColumnType(value: any, type: string | null) {
