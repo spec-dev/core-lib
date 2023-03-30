@@ -178,14 +178,16 @@ class Properties {
         if (lowerType === NUMBER) return attemptToParseNumber(value)
         if (lowerType === BOOLEAN) return Boolean(value)
         if (type === BIG_INT || type === BLOCK_NUMBER) return value.toString()
-        return stringify(value)
+        if (type === 'json' || typeof value === 'object') return stringify(value)
+        return value
     }
 
     fromColumnType(value: any, type: string | null) {
+        const lowerType = type?.toLowerCase()
         if (value === null) return null
-        if (type === DATE) return attemptToParseDate(value)
-        if (type === NUMBER) return attemptToParseNumber(value)
-        if (type === BOOLEAN) return Boolean(value)
+        if (lowerType === DATE) return attemptToParseDate(value)
+        if (lowerType === NUMBER) return attemptToParseNumber(value)
+        if (lowerType === BOOLEAN) return Boolean(value)
         if (type === BIG_INT || type === BLOCK_NUMBER) return BigInt.from(value)
         return value
     }
