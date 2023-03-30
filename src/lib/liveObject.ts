@@ -369,15 +369,12 @@ class LiveObject {
         handler = this._eventHandlers[eventNameWithoutVersion]
         if (handler) return handler
 
-        // NOTE: It must be a contract event that's chain-agnostic at this point.
-        if (!event.name.startsWith(`${CONTRACTS_NSP}.`)) return null
-
-        // Check if chain prefix of contract event name is missing.
-        handler =
+        // Lastly, try removing chain namespace.
+        return (
             this._eventHandlers[removeFirstDotSection(event.name)] ||
-            this._eventHandlers[removeFirstDotSection(eventNameWithoutVersion)]
-
-        return handler || null
+            this._eventHandlers[removeFirstDotSection(eventNameWithoutVersion)] ||
+            null
+        )
     }
 
     _getCallHandlerForFunctionName(call: Call): RegisteredCallHandler | null {
