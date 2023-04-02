@@ -1,3 +1,4 @@
+import { BigInt } from './helpers'
 import {
     Filter as QueryFilter,
     FilterOp as QueryFilterOp,
@@ -14,19 +15,7 @@ export {
     QueryAuthOptions,
     QueryPayload,
 }
-import {
-    StringKeyMap,
-    SpecEventOrigin,
-    TypedSpecEvent,
-    SpecEvent,
-    SpecCall,
-    SpecCallOrigin,
-} from '@spec.types/spec'
-export type Event = SpecEvent
-export type EventOrigin = SpecEventOrigin
-export type TypedEvent<T> = TypedSpecEvent<T>
-export type Call = SpecCall
-export type CallOrigin = SpecCallOrigin
+import { StringKeyMap, Timestamp, Address, TransactionHash, BlockHash } from '@spec.types/spec'
 export {
     Address,
     BlockHash,
@@ -41,8 +30,50 @@ export {
 
 export type ChainId = string
 
-import { BigInt } from './helpers'
 export type BlockNumber = BigInt
+
+export interface EventOrigin {
+    eventTimestamp: Timestamp
+    chainId: ChainId
+    blockNumber: BlockNumber
+    blockHash: BlockHash
+    blockTimestamp: Timestamp
+    transactionHash?: TransactionHash
+    contractAddress?: Address
+}
+
+export interface CallOrigin {
+    eventTimestamp: Timestamp
+    chainId: ChainId
+    blockNumber: BlockNumber
+    blockHash: BlockHash
+    blockTimestamp: Timestamp
+    transactionHash: TransactionHash
+    contractAddress: Address
+    contractName: string
+}
+
+export type Call = {
+    id: string
+    name: string
+    origin: CallOrigin
+    inputs: StringKeyMap
+    inputArgs: any[]
+    outputs: StringKeyMap
+    outputArgs: any[]
+}
+
+export type TypedEvent<T> = {
+    id: string
+    nonce: string
+    name: string
+    origin: EventOrigin
+    data: T
+}
+
+export type Event = TypedEvent<StringKeyMap>
+
+export type EventMulti = TypedEvent<StringKeyMap[]>
 
 export type LiveObjectOptions = {
     uniqueBy: string | string[] | string[][]
