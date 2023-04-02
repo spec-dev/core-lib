@@ -226,7 +226,9 @@ class LiveObject {
         if (!this._properties.haveChanged(this)) return
 
         // Get upsert components.
-        const { insertData, conflictColumns, updateColumns } = this._properties.getUpsertComps(this)
+        const upsertComps = this._properties.getUpsertComps(this)
+        if (!upsertComps) return null
+        const { insertData, conflictColumns, updateColumns } = upsertComps
 
         // Upsert live object.
         const payload = {

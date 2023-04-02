@@ -4,17 +4,23 @@ import { tx } from '../tables'
 
 export async function saveAll(...liveObjects: LiveObject[]) {
     // Get upsert payloads for each live object.
-    const payloads: UpsertPayload[] = liveObjects.map((liveObject) => {
-        const { insertData, conflictColumns, updateColumns } =
-            liveObject._properties.getUpsertComps(liveObject)
-        return {
-            table: liveObject._table,
-            data: [insertData],
-            conflictColumns,
-            updateColumns,
-            returning: '*',
-        }
-    })
+    const payloads = liveObjects
+        .map((liveObject) => {
+            if (!liveObject._properties.haveChanged(liveObject)) return null
+
+            const upsertComps = liveObject._properties.getUpsertComps(liveObject)
+            if (!upsertComps) return null
+            const { insertData, conflictColumns, updateColumns } = upsertComps
+
+            return {
+                table: liveObject._table,
+                data: [insertData],
+                conflictColumns,
+                updateColumns,
+                returning: '*',
+            }
+        })
+        .filter((p) => !!p) as UpsertPayload[]
 
     // Get tables api token from the first one with it set.
     const authToken = liveObjects.find(
@@ -24,7 +30,7 @@ export async function saveAll(...liveObjects: LiveObject[]) {
     // Upsert all live objects in a single transaction.
     const results = await tx(payloads, { token: authToken || null })
 
-    // Map column names back to propertes and assign values.
+    // Map column names back to properties and assign values.
     for (let i = 0; i < results.length; i++) {
         const records = results[i]
         if (!records?.length) continue

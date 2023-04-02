@@ -71,14 +71,14 @@ class Properties {
         return filters
     }
 
-    getUpsertComps(liveObject: LiveObject): UpsertComps {
+    getUpsertComps(liveObject: LiveObject): UpsertComps | null {
         // Get a map of the properties that currently hold values.
         const propertyData = this.withValues(liveObject)
 
         // Validate all unique constraint properties have values.
         for (const propertyName of this.uniqueBy) {
             if (!propertyData.hasOwnProperty(propertyName)) {
-                throw `Live object is missing required unique property "${propertyName}" in order to save.`
+                return null
             }
         }
 
