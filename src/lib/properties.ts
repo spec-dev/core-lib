@@ -26,7 +26,7 @@ import {
 import { BigInt } from './helpers'
 
 class Properties {
-    protected registry: { [key: string]: RegisteredProperty }
+    registry: { [key: string]: RegisteredProperty }
 
     protected columnToPropertyName: StringMap = {}
 

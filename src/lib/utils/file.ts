@@ -1,29 +1,29 @@
 import { StringKeyMap, Manifest, PropertyMetadata } from '../types'
 import stripComments from 'strip-comments'
 
-export function readTextFile(path: string): string {
+export async function readTextFile(path: string): Promise<string> {
     const decoder = new TextDecoder('utf-8')
     // @ts-ignore
-    const data = Deno.readFileSync(path)
+    const data = await Deno.readFile(path)
     return decoder.decode(data)
 }
 
-export function readJsonFile(path: string): StringKeyMap | StringKeyMap[] {
-    return JSON.parse(readTextFile(path))
+export async function readJsonFile(path: string): Promise<StringKeyMap | StringKeyMap[]> {
+    return JSON.parse(await readTextFile(path))
 }
 
-export function readManifest(liveObjectSpecPath: string): Manifest {
+export async function readManifest(liveObjectSpecPath: string): Promise<Manifest> {
     const callerDirComps = liveObjectSpecPath.split('/')
     callerDirComps.pop()
     const callerDirPath = callerDirComps.join('/')
-    return readJsonFile(`${callerDirPath}/manifest.json`) as Manifest
+    return (await readJsonFile(`${callerDirPath}/manifest.json`)) as Manifest
 }
 
-export function buildPropertyMetadata(liveObjectSpecPath: string): {
+export async function buildPropertyMetadata(liveObjectSpecPath: string): Promise<{
     [key: string]: PropertyMetadata
-} {
+}> {
     // Read Live Object spec.ts file contents.
-    const specFileContents = readTextFile(liveObjectSpecPath)
+    const specFileContents = await readTextFile(liveObjectSpecPath)
     if (!specFileContents) return {}
 
     // Get property lines of Live Object.

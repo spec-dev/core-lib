@@ -14,8 +14,9 @@ import {
     TableSpec,
     ColumnSpec,
     CallHandler,
+    Manifest,
 } from './types'
-import { CONTRACTS_NSP, schemaForChainId } from '@spec.types/spec'
+import { schemaForChainId } from '@spec.types/spec'
 import {
     toNamespacedVersion,
     fromNamespacedVersion,
@@ -26,6 +27,7 @@ import PublishEventQueue from './publishEventQueue'
 import Properties from './properties'
 import { upsert, select } from './tables'
 import humps from './utils/humps'
+import { camelToSnake } from './utils/formatters'
 
 class LiveObject {
     declare _liveObjectNsp: string
@@ -38,7 +40,13 @@ class LiveObject {
 
     declare _table: string
 
-    declare _propertyMetadata: { [key: string]: PropertyMetadata }
+    declare _setPropertyMetadataPromise: Promise<any>
+
+    declare _propertyMetadataPromise: Promise<{ [key: string]: PropertyMetadata }>
+
+    declare _absorbManifestPromise: Promise<any>
+
+    declare _manifestPromise: Promise<Manifest>
 
     declare _propertyRegistry: { [key: string]: RegisteredProperty }
 
@@ -62,27 +70,12 @@ class LiveObject {
 
     _tablesApiToken: string | null = null
 
-    get _eventName(): string {
-        return toNamespacedVersion(
-            this._liveObjectNsp,
-            `${this._liveObjectName}Upserted`,
-            this._liveObjectVersion
-        )
-    }
-
     get _publishedEvents(): StringKeyMap[] {
         return this._publishEventQueue.items()
     }
 
     constructor(publishEventQueue: PublishEventQueue) {
         this._publishEventQueue = publishEventQueue
-
-        for (const key in this._propertyMetadata || {}) {
-            const metadata = this._propertyMetadata[key] || {}
-            if (this._propertyRegistry.hasOwnProperty(key)) {
-                this._propertyRegistry[key].metadata = metadata
-            }
-        }
 
         let uniqueBy = Array.isArray(this._options.uniqueBy)
             ? this._options.uniqueBy
@@ -93,6 +86,28 @@ class LiveObject {
         }
 
         this._properties = new Properties(this._propertyRegistry, uniqueBy as string[])
+
+        this._setPropertyMetadataPromise = this._propertyMetadataPromise.then(
+            (propertyMetadata) => {
+                for (const key in propertyMetadata || {}) {
+                    const metadata = propertyMetadata[key] || {}
+                    if (this._propertyRegistry.hasOwnProperty(key)) {
+                        this._propertyRegistry[key].metadata = metadata
+                    }
+                }
+                this._properties.registry = this._propertyRegistry
+            }
+        )
+
+        this._absorbManifestPromise = this._manifestPromise.then((manifest) => {
+            this._liveObjectNsp = manifest.namespace
+            this._liveObjectName = manifest.name
+            this._liveObjectVersion = manifest.version
+            this._table =
+                this._options.table || [manifest.namespace, camelToSnake(manifest.name)].join('.')
+        })
+
+        this._fsPromises()
     }
 
     async handleEvent(event: Event): Promise<boolean> {
@@ -158,12 +173,14 @@ class LiveObject {
         where: StringKeyMap | StringKeyMap[] = [],
         options?: QuerySelectOptions
     ): Promise<any[]> {
-        const table = liveObjectType.prototype?._table
+        const referenceObject = new liveObjectType()
+        await referenceObject._fsPromises()
+        const table = referenceObject._table
         if (!table) throw `Type has no table to query`
 
         // Convert property names into column names within where conditions and options.
         const filters = (Array.isArray(where) ? where : [where]).map((filter) =>
-            this._properties.toColumnKeys(filter)
+            referenceObject._properties.toColumnKeys(filter)
         )
         if (options?.orderBy?.column) {
             const orderByColumns = Array.isArray(options.orderBy.column)
@@ -171,7 +188,7 @@ class LiveObject {
                 : [options.orderBy.column]
 
             const orderByColumnNames = orderByColumns
-                .map((c) => this._properties.toColumnName(c))
+                .map((c) => referenceObject._properties.toColumnName(c))
                 .filter((v) => !!v) as string[]
 
             if (orderByColumnNames.length) {
@@ -186,13 +203,16 @@ class LiveObject {
             (await select(table, filters, options, { token: this._tablesApiToken })) || []
 
         // Convert back into live object type / property types.
-        return records.map((record) => {
-            const liveObject = new liveObjectType(this._publishEventQueue)
-            liveObject._tablesApiToken = this._tablesApiToken
-            const propertyData = liveObject._properties.fromRecord(record)
-            liveObject.assignProperties(propertyData)
-            return liveObject
-        })
+        return await Promise.all(
+            records.map(async (record) => {
+                const liveObject = new liveObjectType(this._publishEventQueue)
+                await liveObject._fsPromises()
+                liveObject._tablesApiToken = this._tablesApiToken
+                const propertyData = liveObject._properties.fromRecord(record)
+                liveObject.assignProperties(propertyData)
+                return liveObject
+            })
+        )
     }
 
     async findOne(
@@ -206,6 +226,7 @@ class LiveObject {
     }
 
     async load(): Promise<boolean> {
+        await this._fsPromises()
         // Find this live object by its unique properties.
         const records =
             (await select(
@@ -222,6 +243,7 @@ class LiveObject {
     }
 
     async save() {
+        await this._fsPromises()
         // Ensure properties have changed since last snapshot.
         if (!this._properties.haveChanged(this)) return
 
@@ -244,7 +266,7 @@ class LiveObject {
         records.length && this.assignProperties(this._properties.fromRecord(records[0]))
 
         // Publish event stating that this live object was upserted.
-        this.publishChange()
+        await this.publishChange()
     }
 
     async query(
@@ -286,20 +308,31 @@ class LiveObject {
         this._properties.capture(this)
     }
 
-    publishChange() {
+    async publishChange() {
+        await this._fsPromises()
         const data = this._properties.snapshot
         if (!data) throw `Can't publish a live object change that hasn't been persisted yet.`
         if (!Object.keys(data).length) {
             console.warn(`Publishing empty data`)
         }
-        this.publishEvent(this._eventName, this._properties.serialize(data))
+        this.publishEvent(await this.getEventName(), this._properties.serialize(data))
     }
 
     publishEvent(name: string, data: StringKeyMap) {
         this._publishEventQueue.push({ name, data })
     }
 
-    tableSpec(): TableSpec {
+    async getEventName(): Promise<string> {
+        await this._fsPromises()
+        return toNamespacedVersion(
+            this._liveObjectNsp,
+            `${this._liveObjectName}Upserted`,
+            this._liveObjectVersion
+        )
+    }
+
+    async tableSpec(): Promise<TableSpec> {
+        await this._fsPromises()
         const indexByProperties = toArrayOfArrays(this._options.indexBy || [])
         const uniqueByProperties = toArrayOfArrays(this._options.uniqueBy || [])
         const [schema, table] = this._table.split('.')
@@ -420,6 +453,10 @@ class LiveObject {
                 throw `Live object before-call handler is not callable: this[${methodName}]`
             await beforeCallHandler(call)
         }
+    }
+
+    async _fsPromises() {
+        await Promise.all([this._absorbManifestPromise, this._setPropertyMetadataPromise])
     }
 }
 

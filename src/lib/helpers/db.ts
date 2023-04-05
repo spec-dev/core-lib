@@ -4,23 +4,33 @@ import { tx } from '../tables'
 
 export async function saveAll(...liveObjects: LiveObject[]) {
     // Get upsert payloads for each live object.
-    const payloads = liveObjects
-        .map((liveObject) => {
-            if (!liveObject._properties.haveChanged(liveObject)) return null
-
-            const upsertComps = liveObject._properties.getUpsertComps(liveObject)
-            if (!upsertComps) return null
-            const { insertData, conflictColumns, updateColumns } = upsertComps
-
-            return {
-                table: liveObject._table,
-                data: [insertData],
-                conflictColumns,
-                updateColumns,
-                returning: '*',
-            }
-        })
-        .filter((p) => !!p) as UpsertPayload[]
+    const payloads = (
+        await Promise.all(
+            liveObjects.map(async (liveObject) => {
+                await liveObject._fsPromises()
+                if (!liveObject._properties.haveChanged(liveObject)) return null
+                const upsertComps = liveObject._properties.getUpsertComps(liveObject)
+                if (!upsertComps) return null
+                const { insertData, conflictColumns, updateColumns } = upsertComps
+                return {
+                    table: liveObject._table,
+                    data: [insertData],
+                    conflictColumns,
+                    updateColumns,
+                    returning: '*',
+                }
+            })
+        )
+    ).filter((p) => !!p) as UpsertPayload[]
+    if (!payloads.length) {
+        console.log(
+            'Empty payload when saving live objects',
+            liveObjects.map((lo) => lo._liveObjectName).join(', '),
+            liveObjects.map((lo) => lo._properties.haveChanged(lo)),
+            liveObjects.map((lo) => !!lo._properties.getUpsertComps(lo))
+        )
+        return
+    }
 
     // Get tables api token from the first one with it set.
     const authToken = liveObjects.find(
@@ -35,6 +45,6 @@ export async function saveAll(...liveObjects: LiveObject[]) {
         const records = results[i]
         if (!records?.length) continue
         liveObjects[i].assignProperties(liveObjects[i]._properties.fromRecord(records[0]))
-        liveObjects[i].publishChange()
+        await liveObjects[i].publishChange()
     }
 }
