@@ -23,6 +23,7 @@ import Properties from './properties'
 import { upsert, select } from './tables'
 import humps from './utils/humps'
 import { camelToSnake } from './utils/formatters'
+import { blockSpecificProperties } from './utils/defaults'
 
 class LiveObject {
     declare _liveObjectNsp: string
@@ -80,14 +81,27 @@ class LiveObject {
             uniqueBy = uniqueBy[0]
         }
 
+        this._addBlockSpecificPropertiesToRegistry()
+
         this._properties = new Properties(this._propertyRegistry, uniqueBy as string[])
 
         this._setPropertyMetadataPromise = this._propertyMetadataPromise.then(
             (propertyMetadata) => {
+                // Set standard property metadata.
                 for (const key in propertyMetadata || {}) {
                     const metadata = propertyMetadata[key] || {}
                     if (this._propertyRegistry.hasOwnProperty(key)) {
                         this._propertyRegistry[key].metadata = metadata
+                    }
+                }
+                // Add metadata for default block-specific properties.
+                for (const propertyName in blockSpecificProperties) {
+                    const { type } = blockSpecificProperties[propertyName].type
+                    if (
+                        this._propertyRegistry.hasOwnProperty(propertyName) &&
+                        !this._propertyRegistry[propertyName].metadata
+                    ) {
+                        this._propertyRegistry[propertyName].metadata = { type }
                     }
                 }
                 this._properties.registry = this._propertyRegistry
@@ -124,6 +138,7 @@ class LiveObject {
         }
 
         // Execute all "before-event" handlers and then call the actual handler itself.
+        this._assignBlockSpecificPropertiesFromOrigin()
         await this._performBeforeEventHandlers(event)
         await method(event)
 
@@ -150,6 +165,7 @@ class LiveObject {
         }
 
         // Execute all "before-call" handlers and then call the actual handler itself.
+        this._assignBlockSpecificPropertiesFromOrigin()
         await this._performBeforeCallHandlers(call)
         await method(call)
 
@@ -161,6 +177,16 @@ class LiveObject {
         // Create new live object and pass event response queue for execution context.
         const newLiveObject = new liveObjectType(this._publishEventQueue)
         newLiveObject._tablesApiToken = this._tablesApiToken
+
+        // Pass any block-specific properties over unless included in properties given.
+        for (const propertyName in blockSpecificProperties) {
+            if (
+                newLiveObject._propertyRegistry.hasOwnProperty(propertyName) &&
+                !initialProperties.hasOwnProperty(propertyName)
+            ) {
+                newLiveObject[propertyName] = this[propertyName]
+            }
+        }
 
         // Assign any initial properties given.
         for (const propertyName in initialProperties) {
@@ -388,6 +414,31 @@ class LiveObject {
             columns: columnSpecs,
             uniqueBy,
             indexBy,
+        }
+    }
+
+    _assignBlockSpecificPropertiesFromOrigin() {
+        this._propertyRegistry = this._propertyRegistry || {}
+
+        for (const propertyName in blockSpecificProperties) {
+            if (
+                this._propertyRegistry.hasOwnProperty(propertyName) &&
+                this.currentOrigin.hasOwnProperty(propertyName)
+            ) {
+                this[propertyName] = this.currentOrigin[propertyName]
+            }
+        }
+    }
+
+    _addBlockSpecificPropertiesToRegistry() {
+        this._propertyRegistry = this._propertyRegistry || {}
+
+        for (const propertyName in blockSpecificProperties) {
+            const { name, options } = blockSpecificProperties[propertyName]
+            this._propertyRegistry[name] = this._propertyRegistry[name] || {
+                name,
+                options: options || {},
+            }
         }
     }
 

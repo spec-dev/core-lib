@@ -16,7 +16,6 @@ import { UpsertComps } from './types'
 import {
     BOOLEAN,
     isDate,
-    isObject,
     NUMBER,
     DATE,
     BIG_INT,
