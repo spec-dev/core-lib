@@ -96,7 +96,7 @@ class LiveObject {
                 }
                 // Add metadata for default block-specific properties.
                 for (const propertyName in blockSpecificProperties) {
-                    const { type } = blockSpecificProperties[propertyName].type
+                    const { type } = blockSpecificProperties[propertyName]
                     if (
                         this._propertyRegistry.hasOwnProperty(propertyName) &&
                         !this._propertyRegistry[propertyName].metadata
