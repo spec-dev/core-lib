@@ -404,8 +404,7 @@ class LiveObject {
 
         // ... Must be a contract event at this point ...
 
-        const properEventName = event.name
-        const splitProperEventName = properEventName.split('.')
+        const splitProperEventName = eventNameWithoutVersion.split('.')
         const chainNsp = splitProperEventName[0]
 
         // "contracts.nsp.contract.event"
@@ -418,7 +417,6 @@ class LiveObject {
         const missingContractsNspEventName = [chainNsp, chainAgnosticEventName].join('.')
 
         return (
-            this._eventHandlers[properEventName] ||
             this._eventHandlers[chainAgnosticEventNameWithContractsNsp] ||
             this._eventHandlers[chainAgnosticEventName] ||
             this._eventHandlers[missingContractsNspEventName] ||
