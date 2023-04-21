@@ -17,12 +17,7 @@ import {
     Manifest,
 } from './types'
 import { schemaForChainId } from '@spec.types/spec'
-import {
-    toNamespacedVersion,
-    fromNamespacedVersion,
-    removeFirstDotSection,
-    toArrayOfArrays,
-} from './utils/formatters'
+import { toNamespacedVersion, fromNamespacedVersion, toArrayOfArrays } from './utils/formatters'
 import PublishEventQueue from './publishEventQueue'
 import Properties from './properties'
 import { upsert, select } from './tables'
@@ -116,6 +111,7 @@ class LiveObject {
         // Get event handler method by name.
         const handler = this._getEventHandlerForEventName(event)
         if (!handler) throw `No event handler registered for event ${event.name}`
+        const handlerOptions = handler.options || {}
 
         // Ensure it actually exists on this.
         const method = ((this as StringKeyMap)[handler.methodName] as EventHandler).bind(this)
@@ -123,14 +119,16 @@ class LiveObject {
 
         // Don't replay events restricted from doing so.
         const eventIsReplay = (event.origin as StringKeyMap).replay
-        if (eventIsReplay && handler.options?.canReplay === false) {
+        if (eventIsReplay && handlerOptions.canReplay === false) {
             return false
         }
 
         // Execute all "before-event" handlers and then call the actual handler itself.
         await this._performBeforeEventHandlers(event)
         await method(event)
-        return true
+
+        // Return whether to auto-save or not.
+        return handlerOptions.autoSave === false ? false : true
     }
 
     async handleCall(call: Call): Promise<boolean> {
@@ -139,6 +137,7 @@ class LiveObject {
         // Get call handler method by name.
         const handler = this._getCallHandlerForFunctionName(call)
         if (!handler) throw `No call handler registered for function ${call.name}`
+        const handlerOptions = handler.options || {}
 
         // Ensure it actually exists on this.
         const method = ((this as StringKeyMap)[handler.methodName] as CallHandler).bind(this)
@@ -146,14 +145,16 @@ class LiveObject {
 
         // Don't replay events restricted from doing so.
         const callIsReplay = (call.origin as StringKeyMap).replay
-        if (callIsReplay && handler.options?.canReplay === false) {
+        if (callIsReplay && handlerOptions.canReplay === false) {
             return false
         }
 
         // Execute all "before-call" handlers and then call the actual handler itself.
         await this._performBeforeCallHandlers(call)
         await method(call)
-        return true
+
+        // Return whether to auto-save or not.
+        return handlerOptions.autoSave === false ? false : true
     }
 
     new(liveObjectType, initialProperties: StringKeyMap = {}) {
@@ -401,10 +402,26 @@ class LiveObject {
         handler = this._eventHandlers[eventNameWithoutVersion]
         if (handler) return handler
 
-        // Lastly, try removing chain namespace.
+        // ... Must be a contract event at this point ...
+
+        const properEventName = event.name
+        const splitProperEventName = properEventName.split('.')
+        const chainNsp = splitProperEventName[0]
+
+        // "contracts.nsp.contract.event"
+        const chainAgnosticEventNameWithContractsNsp = splitProperEventName.slice(1).join('.')
+
+        // "nsp.contract.event"
+        const chainAgnosticEventName = splitProperEventName.slice(2).join('.')
+
+        // "eth.nsp.contract.event"
+        const missingContractsNspEventName = [chainNsp, chainAgnosticEventName].join('.')
+
         return (
-            this._eventHandlers[removeFirstDotSection(event.name)] ||
-            this._eventHandlers[removeFirstDotSection(eventNameWithoutVersion)] ||
+            this._eventHandlers[properEventName] ||
+            this._eventHandlers[chainAgnosticEventNameWithContractsNsp] ||
+            this._eventHandlers[chainAgnosticEventName] ||
+            this._eventHandlers[missingContractsNspEventName] ||
             null
         )
     }
@@ -422,13 +439,13 @@ class LiveObject {
         const chainAgnosticFunctionName = splitProperFunctionName.slice(2).join('.')
 
         // "eth.nsp.contract.func"
-        const nissingContractsNspFunctionName = [chainNsp, chainAgnosticFunctionName].join('.')
+        const missingContractsNspFunctionName = [chainNsp, chainAgnosticFunctionName].join('.')
 
         return (
             this._callHandlers[properFunctionName] ||
             this._callHandlers[chainAgnosticFunctionNameWithContractsNsp] ||
             this._callHandlers[chainAgnosticFunctionName] ||
-            this._callHandlers[nissingContractsNspFunctionName] ||
+            this._callHandlers[missingContractsNspFunctionName] ||
             null
         )
     }

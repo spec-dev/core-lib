@@ -104,6 +104,7 @@ export type RegisteredProperty = {
 
 export type EventHandlerOptions = {
     canReplay?: boolean
+    autoSave?: boolean
 }
 
 export type EventHandler = (event: Event) => Promise<void>
@@ -121,6 +122,7 @@ export type RegisteredEventHandler = {
 
 export type CallHandlerOptions = {
     canReplay?: boolean
+    autoSave?: boolean
 }
 
 export type CallHandler = (call: Call) => Promise<void>
