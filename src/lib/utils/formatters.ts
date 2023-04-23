@@ -93,3 +93,5 @@ export function toArrayOfArrays(value: string | string[] | string[][]): string[]
     }
     return resolvedValue as string[][]
 }
+
+export const unique = (arr: any[]): any[] => Array.from(new Set(arr))

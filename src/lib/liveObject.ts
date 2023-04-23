@@ -22,7 +22,7 @@ import PublishEventQueue from './publishEventQueue'
 import Properties from './properties'
 import { upsert, select } from './tables'
 import humps from './utils/humps'
-import { camelToSnake } from './utils/formatters'
+import { camelToSnake, unique } from './utils/formatters'
 import { blockSpecificProperties } from './utils/defaults'
 
 class LiveObject {
@@ -31,6 +31,8 @@ class LiveObject {
     declare _liveObjectName: string
 
     declare _liveObjectVersion: string
+
+    declare _liveObjectChainIds: string[]
 
     declare _options: LiveObjectOptions
 
@@ -112,6 +114,7 @@ class LiveObject {
             this._liveObjectNsp = manifest.namespace
             this._liveObjectName = manifest.name
             this._liveObjectVersion = manifest.version
+            this._liveObjectChainIds = unique((manifest.chains || []).map((id) => id.toString()))
             this._table =
                 this._options.table || [manifest.namespace, camelToSnake(manifest.name)].join('.')
         })
