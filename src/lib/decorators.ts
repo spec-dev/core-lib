@@ -33,6 +33,9 @@ export function OnEvent(eventName: string, options: EventHandlerOptions = {}): P
     return function (object: any, methodName: string | symbol) {
         object.constructor.prototype._eventHandlers =
             object.constructor.prototype._eventHandlers || {}
+        if (options.signature && !eventName.includes('@')) {
+            eventName += `@${options.signature}`
+        }
         object.constructor.prototype._eventHandlers[eventName] = { methodName, options }
     }
 }
@@ -49,6 +52,9 @@ export function OnCall(functionName: string, options: CallHandlerOptions = {}): 
     return function (object: any, methodName: string | symbol) {
         object.constructor.prototype._callHandlers =
             object.constructor.prototype._callHandlers || {}
+        if (options.signature && !functionName.includes('@')) {
+            functionName += `@${options.signature}`
+        }
         object.constructor.prototype._callHandlers[functionName] = { methodName, options }
     }
 }

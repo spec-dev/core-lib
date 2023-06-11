@@ -38,8 +38,11 @@ export interface EventOrigin {
     blockNumber: BlockNumber
     blockHash: BlockHash
     blockTimestamp: Timestamp
-    transactionHash?: TransactionHash
     contractAddress?: Address
+    transactionHash?: TransactionHash
+    transactionIndex?: number
+    logIndex?: number
+    signature?: string
 }
 
 export interface CallOrigin {
@@ -51,6 +54,7 @@ export interface CallOrigin {
     transactionHash: TransactionHash
     contractAddress: Address
     contractName: string
+    signature: string
 }
 
 export type Call = {
@@ -103,8 +107,8 @@ export type RegisteredProperty = {
 }
 
 export type EventHandlerOptions = {
-    canReplay?: boolean
     autoSave?: boolean
+    signature?: string
 }
 
 export type EventHandler = (event: Event) => Promise<void>
@@ -121,8 +125,8 @@ export type RegisteredEventHandler = {
 }
 
 export type CallHandlerOptions = {
-    canReplay?: boolean
     autoSave?: boolean
+    signature?: string
 }
 
 export type CallHandler = (call: Call) => Promise<void>

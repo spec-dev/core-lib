@@ -134,12 +134,6 @@ class LiveObject {
         const method = ((this as StringKeyMap)[handler.methodName] as EventHandler).bind(this)
         if (!method) throw `Live object event handler is not callable: this[${handler.methodName}]`
 
-        // Don't replay events restricted from doing so.
-        const eventIsReplay = (event.origin as StringKeyMap).replay
-        if (eventIsReplay && handlerOptions.canReplay === false) {
-            return false
-        }
-
         // Execute all "before-event" handlers and then call the actual handler itself.
         this._assignBlockSpecificPropertiesFromOrigin()
         await this._performBeforeEventHandlers(event)
@@ -160,12 +154,6 @@ class LiveObject {
         // Ensure it actually exists on this.
         const method = ((this as StringKeyMap)[handler.methodName] as CallHandler).bind(this)
         if (!method) throw `Live object call handler is not callable: this[${handler.methodName}]`
-
-        // Don't replay events restricted from doing so.
-        const callIsReplay = (call.origin as StringKeyMap).replay
-        if (callIsReplay && handlerOptions.canReplay === false) {
-            return false
-        }
 
         // Execute all "before-call" handlers and then call the actual handler itself.
         this._assignBlockSpecificPropertiesFromOrigin()
@@ -343,7 +331,9 @@ class LiveObject {
         const data = this._properties.snapshot
         if (!data) throw `Can't publish a live object change that hasn't been persisted yet.`
         if (!Object.keys(data).length) {
-            console.warn(`Publishing empty data`)
+            const eventName = await this.getEventName()
+            console.warn(`No changes to publish for ${eventName}`)
+            return
         }
         this.publishEvent(await this.getEventName(), this._properties.serialize(data))
     }
@@ -446,18 +436,8 @@ class LiveObject {
     }
 
     _getEventHandlerForEventName(event: Event): RegisteredEventHandler | null {
-        // Try matching against full event name first.
-        let handler = this._eventHandlers[event.name]
-        if (handler) return handler
-
-        // Try removing version next.
-        const { nsp, name } = fromNamespacedVersion(event.name)
+        const { nsp, name, version } = fromNamespacedVersion(event.name)
         const eventNameWithoutVersion = [nsp, name].join('.')
-        handler = this._eventHandlers[eventNameWithoutVersion]
-        if (handler) return handler
-
-        // ... Must be a contract event at this point ...
-
         const splitProperEventName = eventNameWithoutVersion.split('.')
         const chainNsp = splitProperEventName[0]
 
@@ -470,36 +450,57 @@ class LiveObject {
         // "eth.nsp.contract.event"
         const missingContractsNspEventName = [chainNsp, chainAgnosticEventName].join('.')
 
-        return (
-            this._eventHandlers[chainAgnosticEventNameWithContractsNsp] ||
-            this._eventHandlers[chainAgnosticEventName] ||
-            this._eventHandlers[missingContractsNspEventName] ||
-            null
-        )
+        const prioritizedMatchOptions = [
+            event.name,
+            chainAgnosticEventNameWithContractsNsp + `@${version}`,
+            chainAgnosticEventName + `@${version}`,
+            missingContractsNspEventName + `@${version}`,
+            eventNameWithoutVersion,
+            chainAgnosticEventNameWithContractsNsp,
+            chainAgnosticEventName,
+            missingContractsNspEventName,
+        ]
+
+        for (const option of prioritizedMatchOptions) {
+            const handler = this._eventHandlers[option]
+            if (handler) return handler
+        }
+
+        return null
     }
 
     _getCallHandlerForFunctionName(call: Call): RegisteredCallHandler | null {
-        // "eth.contracts.nsp.contract.func"
-        const properFunctionName = call.name
-        const splitProperFunctionName = properFunctionName.split('.')
+        const { nsp, name, version } = fromNamespacedVersion(call.name)
+        const functionNameWithoutVersion = [nsp, name].join('.')
+        const splitProperFunctionName = functionNameWithoutVersion.split('.')
         const chainNsp = splitProperFunctionName[0]
 
-        // "contracts.nsp.contract.func"
+        // "contracts.nsp.contract.functionName"
         const chainAgnosticFunctionNameWithContractsNsp = splitProperFunctionName.slice(1).join('.')
 
-        // "nsp.contract.func"
+        // "nsp.contract.functionName"
         const chainAgnosticFunctionName = splitProperFunctionName.slice(2).join('.')
 
-        // "eth.nsp.contract.func"
+        // "eth.nsp.contract.functionName"
         const missingContractsNspFunctionName = [chainNsp, chainAgnosticFunctionName].join('.')
 
-        return (
-            this._callHandlers[properFunctionName] ||
-            this._callHandlers[chainAgnosticFunctionNameWithContractsNsp] ||
-            this._callHandlers[chainAgnosticFunctionName] ||
-            this._callHandlers[missingContractsNspFunctionName] ||
-            null
-        )
+        const prioritizedMatchOptions = [
+            call.name,
+            chainAgnosticFunctionNameWithContractsNsp + `@${version}`,
+            chainAgnosticFunctionName + `@${version}`,
+            missingContractsNspFunctionName + `@${version}`,
+            functionNameWithoutVersion,
+            chainAgnosticFunctionNameWithContractsNsp,
+            chainAgnosticFunctionName,
+            missingContractsNspFunctionName,
+        ]
+
+        for (const option of prioritizedMatchOptions) {
+            const handler = this._callHandlers[option]
+            if (handler) return handler
+        }
+
+        return null
     }
 
     async _performBeforeEventHandlers(event: Event) {
