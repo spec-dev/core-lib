@@ -150,7 +150,7 @@ class LiveObject {
         this._assignBlockSpecificPropertiesFromOrigin()
         await this._performBeforeEventHandlers(event)
         const resp = await method(event)
-        
+
         // Return whether to auto-save or not.
         return handlerOptions.autoSave === false || resp === false ? false : true
     }
