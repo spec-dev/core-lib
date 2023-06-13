@@ -15,6 +15,10 @@ import {
     ColumnSpec,
     CallHandler,
     Manifest,
+    BlockHash,
+    BlockNumber,
+    Timestamp,
+    ChainId,
 } from './types'
 import { schemaForChainId } from '@spec.types/spec'
 import { toNamespacedVersion, fromNamespacedVersion, toArrayOfArrays } from './utils/formatters'
@@ -61,6 +65,14 @@ class LiveObject {
     declare currentTransaction: Transaction
 
     declare currentOrigin: StringKeyMap
+
+    declare blockHash: BlockHash
+
+    declare blockNumber: BlockNumber
+
+    declare blockTimestamp: Timestamp
+
+    declare chainId: ChainId
 
     _publishEventQueue: PublishEventQueue
 
