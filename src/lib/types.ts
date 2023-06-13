@@ -111,7 +111,7 @@ export type EventHandlerOptions = {
     signature?: string
 }
 
-export type EventHandler = (event: Event) => Promise<void>
+export type EventHandler = (event: Event) => Promise<boolean | void>
 
 export type EventNameComps = {
     nsp: string
@@ -129,7 +129,7 @@ export type CallHandlerOptions = {
     signature?: string
 }
 
-export type CallHandler = (call: Call) => Promise<void>
+export type CallHandler = (call: Call) => Promise<boolean | void>
 
 export type RegisteredCallHandler = {
     methodName: string

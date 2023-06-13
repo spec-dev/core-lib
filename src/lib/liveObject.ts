@@ -149,10 +149,10 @@ class LiveObject {
         // Execute all "before-event" handlers and then call the actual handler itself.
         this._assignBlockSpecificPropertiesFromOrigin()
         await this._performBeforeEventHandlers(event)
-        await method(event)
-
+        const resp = await method(event)
+        
         // Return whether to auto-save or not.
-        return handlerOptions.autoSave === false ? false : true
+        return handlerOptions.autoSave === false || resp === false ? false : true
     }
 
     async handleCall(call: Call): Promise<boolean> {
@@ -170,10 +170,10 @@ class LiveObject {
         // Execute all "before-call" handlers and then call the actual handler itself.
         this._assignBlockSpecificPropertiesFromOrigin()
         await this._performBeforeCallHandlers(call)
-        await method(call)
+        const resp = await method(call)
 
         // Return whether to auto-save or not.
-        return handlerOptions.autoSave === false ? false : true
+        return handlerOptions.autoSave === false || resp === false ? false : true
     }
 
     new(liveObjectType, initialProperties: StringKeyMap = {}) {
