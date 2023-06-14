@@ -1,4 +1,4 @@
-import { StringKeyMap, Manifest, PropertyMetadata } from '../types'
+import { StringKeyMap, Manifest } from '../types'
 import { promises as fs } from 'fs'
 
 interface LineDictionary {
