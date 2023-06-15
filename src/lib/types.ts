@@ -149,6 +149,7 @@ export type Manifest = {
     displayName: string
     description: string
     chains: number[] | string[]
+    isContractFactory?: boolean
 }
 
 export type ColumnSpec = {
