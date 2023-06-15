@@ -1,5 +1,6 @@
 import { StringKeyMap, Manifest } from '../types'
 import { promises as fs } from 'fs'
+import { parse } from 'comment-parser'
 
 interface LineDictionary {
     [key: string]: string
@@ -10,7 +11,6 @@ interface Property {
     type: string
     desc: string
 }
-const { parse } = require('comment-parser')
 
 export async function readTextFile(path: string): Promise<string> {
     const decoder = new TextDecoder('utf-8')
