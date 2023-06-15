@@ -1,6 +1,6 @@
 import { StringKeyMap } from './types'
 
-class PublishEventQueue {
+class Queue {
     protected queue: StringKeyMap[] = []
 
     push(event: StringKeyMap) {
@@ -12,4 +12,4 @@ class PublishEventQueue {
     }
 }
 
-export default PublishEventQueue
+export default Queue
