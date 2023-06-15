@@ -185,7 +185,10 @@ class LiveObject {
 
     new(liveObjectType, initialProperties: StringKeyMap = {}) {
         // Create new live object and pass event response queue for execution context.
-        const newLiveObject = new liveObjectType(this._publishEventQueue, this._contractRegistrationQueue)
+        const newLiveObject = new liveObjectType(
+            this._publishEventQueue,
+            this._contractRegistrationQueue
+        )
         newLiveObject._tablesApiToken = this._tablesApiToken
 
         // Pass any block-specific properties over unless included in properties given.
@@ -242,7 +245,10 @@ class LiveObject {
         // Convert back into live object type / property types.
         return await Promise.all(
             records.map(async (record) => {
-                const liveObject = new liveObjectType(this._publishEventQueue, this._contractRegistrationQueue)
+                const liveObject = new liveObjectType(
+                    this._publishEventQueue,
+                    this._contractRegistrationQueue
+                )
                 await liveObject._fsPromises()
                 liveObject._tablesApiToken = this._tablesApiToken
                 const propertyData = liveObject._properties.fromRecord(record)
@@ -360,7 +366,7 @@ class LiveObject {
     publishEvent(name: string, data: StringKeyMap) {
         this._publishEventQueue.push({ name, data })
     }
-    
+
     registerContract(address: string, chainId: string, group: string) {
         this._contractRegistrationQueue.push({ address, chainId, group })
     }
