@@ -367,7 +367,7 @@ class LiveObject {
         this._publishEventQueue.push({ name, data })
     }
 
-    registerContract(address: string, group: string) {
+    addContractToGroup(address: string, group: string) {
         this._contractRegistrationQueue.push({ address, chainId: this.chainId, group })
     }
 
