@@ -326,7 +326,7 @@ class LiveObject {
     async getCurrentBlock(): Promise<Block> {
         if (this.currentBlock) return this.currentBlock
         const { chainId, blockHash } = this.currentOrigin
-        const tablePath = [schemaForChainId[chainId], 'blocks'].join('.')
+        const tablePath = [schemaForChainId(chainId), 'blocks'].join('.')
         const records = await this.query(tablePath, { hash: blockHash }, { limit: 1 })
         this.currentBlock = records[0]
         return this.currentBlock
@@ -335,7 +335,7 @@ class LiveObject {
     async getCurrentTransaction(): Promise<Transaction> {
         if (this.currentTransaction) return this.currentTransaction
         const { chainId, transactionHash } = this.currentOrigin
-        const tablePath = [schemaForChainId[chainId], 'transactions'].join('.')
+        const tablePath = [schemaForChainId(chainId), 'transactions'].join('.')
         const records = await this.query(tablePath, { hash: transactionHash }, { limit: 1 })
         this.currentTransaction = records[0]
         return this.currentTransaction
