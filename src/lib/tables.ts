@@ -3,6 +3,7 @@ import { QueryError } from './errors'
 import { QuerySelectOptions, StringKeyMap, QueryAuthOptions } from './types'
 
 const tableClient = new SpecTableClient()
+const prodTableClient = new SpecTableClient({ origin: 'https://tables-ingress.spec.dev' })
 
 export async function select(
     table: string,
@@ -36,5 +37,18 @@ export async function tx(
         return tableClient.tx(payloads, authOptions)
     } catch (err) {
         throw new QueryError('tx', (payloads || []).map((p) => p.table).join(', '), err)
+    }
+}
+
+export async function prodSelect(
+    table: string,
+    where: StringKeyMap | StringKeyMap[],
+    options?: QuerySelectOptions,
+    authOptions?: QueryAuthOptions
+) {
+    try {
+        return prodTableClient.select(table, where, options, authOptions)
+    } catch (err) {
+        throw new QueryError('select', table, err)
     }
 }

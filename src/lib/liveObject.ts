@@ -24,7 +24,7 @@ import { schemaForChainId } from '@spec.types/spec'
 import { toNamespacedVersion, fromNamespacedVersion, toArrayOfArrays } from './utils/formatters'
 import Queue from './queue'
 import Properties from './properties'
-import { upsert, select } from './tables'
+import { upsert, select, prodSelect } from './tables'
 import humps from './utils/humps'
 import { camelToSnake, unique } from './utils/formatters'
 import { blockSpecificProperties } from './utils/defaults'
@@ -315,11 +315,13 @@ class LiveObject {
     async query(
         table: string,
         where: StringKeyMap | StringKeyMap[] = [],
-        options?: QuerySelectOptions
+        options: QuerySelectOptions = {},
+        prod: boolean = true
     ): Promise<any[]> {
         const filters = Array.isArray(where) ? where : [where]
+        const method = prod ? prodSelect : select
         const records =
-            (await select(table, filters, options, { token: this._tablesApiToken })) || []
+            (await method(table, filters, options, { token: this._tablesApiToken })) || []
         return humps.camelizeKeys(records)
     }
 
