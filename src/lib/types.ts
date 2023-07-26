@@ -27,8 +27,14 @@ export {
     Block,
     Transaction,
 } from '@spec.types/spec'
+export { Abi, AbiItem, AbiItemType, MetaProtocolId, ContractCallResponse } from '@spec.dev/rpc'
 
-export type ChainId = string
+export enum ChainId {
+    Ethereum = '1',
+    Goerli = '5',
+    Polygon = '137',
+    Mumbai = '80001',
+}
 
 export type BlockNumber = BigInt
 

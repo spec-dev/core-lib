@@ -1,4 +1,4 @@
-import LiveObject from './liveObject'
+import LiveObject from './LiveObject'
 import {
     PropertyMetadata,
     PropertyOptions,

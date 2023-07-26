@@ -95,3 +95,16 @@ export function toArrayOfArrays(value: string | string[] | string[][]): string[]
 }
 
 export const unique = (arr: any[]): any[] => Array.from(new Set(arr))
+
+export const getContractGroupFromInputName = (input: string): string | null => {
+    input = input || ''
+    if (input.includes('@')) {
+        input = input.split('@')[0]
+    }
+
+    const comps = input.split('.')
+    if (comps.length < 3) return null
+
+    const l = comps.length
+    return [comps[l - 3], comps[l - 2]].join('.')
+}
