@@ -29,6 +29,11 @@ export {
 } from '@spec.types/spec'
 export { Abi, AbiItem, AbiItemType, MetaProtocolId, ContractCallResponse } from '@spec.dev/rpc'
 
+// Pretty much just for case-matching when building live object properties (if desired).
+export type String = string
+export type Boolean = boolean
+export type Number = number
+
 export enum ChainId {
     Ethereum = '1',
     Goerli = '5',

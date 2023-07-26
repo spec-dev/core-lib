@@ -50,7 +50,7 @@ function findPropertyLines(contents: string): string[] {
     const propertyLines: string[] = []
     let takeNextLine = false
     for (let i = 0; i < lines.length; i++) {
-        const line = lines[i]
+        let line = lines[i]
 
         // Found property decorator.
         if (line.startsWith('@Property(')) {
@@ -79,6 +79,9 @@ function parsePropertyNameAndTypeFromLine(line: string): StringKeyMap {
     const preColonWords = preColon.split(' ').filter((v) => !!v)
     const postColonWords = postColon.split(' ').filter((v) => !!v)
     const propertyName = preColonWords.pop()
-    const propertyType = postColonWords[0]
+    let propertyType = postColonWords[0]
+    while (propertyType.endsWith(';')) {
+        propertyType = propertyType.slice(0, propertyType.length - 1)
+    }
     return { name: propertyName, type: propertyType }
 }
