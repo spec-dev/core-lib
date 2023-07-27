@@ -316,7 +316,7 @@ class LiveObject {
         // Get upsert components.
         const upsertComps = this._properties.getUpsertComps(this)
         if (!upsertComps) return null
-        const { insertData, conflictColumns, updateColumns } = upsertComps
+        const { insertData, conflictColumns, updateColumns, primaryTimestampColumn } = upsertComps
 
         // Upsert live object.
         const payload = {
@@ -324,12 +324,14 @@ class LiveObject {
             data: insertData,
             conflictColumns,
             updateColumns,
+            primaryTimestampColumn,
             returning: '*',
         }
         const records = await upsert(payload, { token: this._tablesApiToken })
+        if (!records.length || !records[0]) return
 
         // Map column names back to propertes and assign values.
-        records.length && this.assignProperties(this._properties.fromRecord(records[0]))
+        this.assignProperties(this._properties.fromRecord(records[0]))
 
         // Publish event stating that this live object was upserted.
         await this.publishChange()

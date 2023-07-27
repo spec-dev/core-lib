@@ -39,6 +39,13 @@ class Properties {
         return this.uniqueBy.map((propertyName) => this.toColumnName(propertyName) as string)
     }
 
+    get primaryTimestampPropertyName(): string | null {
+        return (
+            Object.values(this.registry).find(({ options }) => !!options.primaryTimestamp)?.name ||
+            null
+        )
+    }
+
     constructor(registry: { [key: string]: RegisteredProperty }, uniqueBy: string[]) {
         this.registry = registry
         this._buildPropertyColumnNameMappings()
@@ -74,11 +81,22 @@ class Properties {
         // Get a map of the properties that currently hold values.
         const propertyData = this.withValues(liveObject)
 
-        // Validate all unique constraint properties have values.
+        // Ensure all unique constraint properties have values.
         for (const propertyName of this.uniqueBy) {
             if (!propertyData.hasOwnProperty(propertyName)) {
                 return null
             }
+        }
+
+        // Ensure the primary timestamp property exists.
+        if (!this.primaryTimestampPropertyName) {
+            throw `No primary timestamp property found.`
+        }
+
+        // Ensure the primary timestamp property holds value.
+        const primaryTimestampProperty = this.primaryTimestampPropertyName!
+        if (!propertyData[primaryTimestampProperty]) {
+            throw `Primary timestamp property "${primaryTimestampProperty}" not set`
         }
 
         // Get the list of the property names to update on conflict.
@@ -92,7 +110,8 @@ class Properties {
         return {
             insertData: this.toRecord(propertyData),
             conflictColumns: this.uniqueByColumnNames,
-            updateColumns: updatePropertyNames.map((p) => this.toColumnName(p) as string),
+            updateColumns: updatePropertyNames.map((p) => this.toColumnName(p)!),
+            primaryTimestampColumn: this.toColumnName(primaryTimestampProperty)!,
         }
     }
 

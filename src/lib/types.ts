@@ -151,6 +151,7 @@ export type UpsertComps = {
     insertData: StringKeyMap | StringKeyMap[]
     conflictColumns: string[]
     updateColumns: string[]
+    primaryTimestampColumn: string
 }
 
 export type Manifest = {
