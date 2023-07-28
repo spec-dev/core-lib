@@ -209,6 +209,7 @@ class LiveObject {
     new(liveObjectType, initialProperties: StringKeyMap = {}) {
         // Create new live object and pass event response queue for execution context.
         const newLiveObject = new liveObjectType(
+            {},
             this._publishEventQueue,
             this._contractRegistrationQueue
         )
