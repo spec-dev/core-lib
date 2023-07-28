@@ -269,6 +269,7 @@ class LiveObject {
         return await Promise.all(
             records.map(async (record) => {
                 const liveObject = new liveObjectType(
+                    {},
                     this._publishEventQueue,
                     this._contractRegistrationQueue
                 )
