@@ -1,4 +1,4 @@
-import LiveObject from '../LiveObject'
+import LiveObject from '../_LiveObject'
 import { UpsertPayload } from '@spec.dev/tables'
 import { tx } from '../tables'
 
