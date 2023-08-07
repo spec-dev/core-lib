@@ -1,6 +1,6 @@
 export * from './lib/decorators'
-import LiveObject from './lib/_LiveObject'
-import Queue from './lib/_Queue'
+import LiveObject from './lib/LiveObject'
+import Queue from './lib/Queue'
 export { LiveObject, Queue }
 export * from './lib/contracts'
 export * from './lib/types'
