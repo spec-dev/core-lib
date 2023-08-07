@@ -1,4 +1,4 @@
-import LiveObject from '../liveObject'
+import LiveObject from '../LiveObject'
 import { UpsertPayload } from '@spec.dev/tables'
 import { tx } from '../tables'
 
@@ -9,14 +9,18 @@ export async function saveAll(...liveObjects: LiveObject[]) {
             liveObjects.map(async (liveObject) => {
                 await liveObject._fsPromises()
                 if (!liveObject._properties.haveChanged(liveObject)) return null
+
                 const upsertComps = liveObject._properties.getUpsertComps(liveObject)
                 if (!upsertComps) return null
-                const { insertData, conflictColumns, updateColumns } = upsertComps
+                const { insertData, conflictColumns, updateColumns, primaryTimestampColumn } =
+                    upsertComps
+
                 return {
                     table: liveObject._table,
                     data: [insertData],
                     conflictColumns,
                     updateColumns,
+                    primaryTimestampColumn,
                     returning: '*',
                 }
             })
@@ -43,7 +47,7 @@ export async function saveAll(...liveObjects: LiveObject[]) {
     // Map column names back to properties and assign values.
     for (let i = 0; i < results.length; i++) {
         const records = results[i]
-        if (!records?.length) continue
+        if (!records?.length || !records[0]) continue
         liveObjects[i].assignProperties(liveObjects[i]._properties.fromRecord(records[0]))
         await liveObjects[i].publishChange()
     }

@@ -1,6 +1,6 @@
 {
     "name": "@spec.dev/core",
-    "version": "0.0.86",
+    "version": "0.0.104",
     "description": "Spec Core Library",
     "keywords": [
         "javascript",
@@ -23,6 +23,7 @@
     "repository": "spec-dev/core-lib",
     "scripts": {
         "clean": "rimraf dist",
+        "scrap": "ts-node ./src/scrap.ts",
         "format": "prettier --write \"{src,test}/**/*.ts\"",
         "build": "genversion src/lib/version.ts --es6 && run-s clean format build:*",
         "build:main": "tsc -p tsconfig.json",
@@ -30,7 +31,8 @@
         "types-generate": "dts-gen -m '@spec.dev/core' -s"
     },
     "dependencies": {
-        "@spec.dev/tables": "^0.0.18",
+        "@spec.dev/rpc": "^0.0.4",
+        "@spec.dev/tables": "^0.0.20",
         "@spec.types/spec": "^0.0.27",
         "bn.js": "^5.2.1",
         "strip-comments": "^2.0.1"
@@ -44,6 +46,7 @@
         "pretty-quick": "^3.1.0",
         "rimraf": "^3.0.2",
         "ts-loader": "^8.0.11",
+        "ts-node": "^10.8.2",
         "typedoc": "^0.22.11",
         "typescript": "^4.5.5",
         "webpack": "^5.4.0",

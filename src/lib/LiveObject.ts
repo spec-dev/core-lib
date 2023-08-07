@@ -19,15 +19,17 @@ import {
     BlockNumber,
     Timestamp,
     ChainId,
+    Abi,
 } from './types'
-import { schemaForChainId } from '@spec.types/spec'
+import { Address, schemaForChainId } from '@spec.types/spec'
 import { toNamespacedVersion, fromNamespacedVersion, toArrayOfArrays } from './utils/formatters'
-import Queue from './queue'
-import Properties from './properties'
-import { upsert, select } from './tables'
+import Queue from './Queue'
+import Properties from './Properties'
+import { upsert, select, prodSelect } from './tables'
 import humps from './utils/humps'
-import { camelToSnake, unique } from './utils/formatters'
+import { camelToSnake, unique, getContractGroupFromInputName } from './utils/formatters'
 import { blockSpecificProperties } from './utils/defaults'
+import Contract from './contracts/Contract'
 
 class LiveObject {
     declare _liveObjectNsp: string
@@ -35,6 +37,10 @@ class LiveObject {
     declare _liveObjectName: string
 
     declare _liveObjectVersion: string
+
+    declare _liveObjectDisplayName: string
+
+    declare _liveObjectDescription: string
 
     declare _liveObjectChainIds: string[]
 
@@ -60,6 +66,8 @@ class LiveObject {
 
     declare _beforeCallHandlers: string[]
 
+    declare contract: any
+
     declare currentBlock: Block
 
     declare currentTransaction: Transaction
@@ -73,6 +81,8 @@ class LiveObject {
     declare blockTimestamp: Timestamp
 
     declare chainId: ChainId
+
+    _inputContractGroupAbis: { [key: string]: Abi }
 
     _publishEventQueue: Queue
 
@@ -90,7 +100,12 @@ class LiveObject {
         return this._contractRegistrationQueue.items()
     }
 
-    constructor(publishEventQueue: Queue, contractRegistrationQueue: Queue) {
+    constructor(
+        inputContractGroupAbis: { [key: string]: Abi },
+        publishEventQueue: Queue,
+        contractRegistrationQueue: Queue
+    ) {
+        this._inputContractGroupAbis = inputContractGroupAbis
         this._publishEventQueue = publishEventQueue
         this._contractRegistrationQueue = contractRegistrationQueue
 
@@ -133,6 +148,8 @@ class LiveObject {
             this._liveObjectNsp = manifest.namespace
             this._liveObjectName = manifest.name
             this._liveObjectVersion = manifest.version
+            this._liveObjectDisplayName = manifest.displayName
+            this._liveObjectDescription = manifest.description
             this._liveObjectChainIds = unique((manifest.chains || []).map((id) => id.toString()))
             this._table =
                 this._options.table || [manifest.namespace, camelToSnake(manifest.name)].join('.')
@@ -152,6 +169,9 @@ class LiveObject {
         // Ensure it actually exists on this.
         const method = ((this as StringKeyMap)[handler.methodName] as EventHandler).bind(this)
         if (!method) throw `Live object event handler is not callable: this[${handler.methodName}]`
+
+        // Create a new Contract instance pointing to this event's origin contract.
+        this._assignInputContract(event)
 
         // Execute all "before-event" handlers and then call the actual handler itself.
         this._assignBlockSpecificPropertiesFromOrigin()
@@ -174,6 +194,9 @@ class LiveObject {
         const method = ((this as StringKeyMap)[handler.methodName] as CallHandler).bind(this)
         if (!method) throw `Live object call handler is not callable: this[${handler.methodName}]`
 
+        // Create a new Contract instance pointing to this method's origin contract.
+        this._assignInputContract(call)
+
         // Execute all "before-call" handlers and then call the actual handler itself.
         this._assignBlockSpecificPropertiesFromOrigin()
         await this._performBeforeCallHandlers(call)
@@ -186,6 +209,7 @@ class LiveObject {
     new(liveObjectType, initialProperties: StringKeyMap = {}) {
         // Create new live object and pass event response queue for execution context.
         const newLiveObject = new liveObjectType(
+            {},
             this._publishEventQueue,
             this._contractRegistrationQueue
         )
@@ -246,6 +270,7 @@ class LiveObject {
         return await Promise.all(
             records.map(async (record) => {
                 const liveObject = new liveObjectType(
+                    {},
                     this._publishEventQueue,
                     this._contractRegistrationQueue
                 )
@@ -293,7 +318,7 @@ class LiveObject {
         // Get upsert components.
         const upsertComps = this._properties.getUpsertComps(this)
         if (!upsertComps) return null
-        const { insertData, conflictColumns, updateColumns } = upsertComps
+        const { insertData, conflictColumns, updateColumns, primaryTimestampColumn } = upsertComps
 
         // Upsert live object.
         const payload = {
@@ -301,12 +326,14 @@ class LiveObject {
             data: insertData,
             conflictColumns,
             updateColumns,
+            primaryTimestampColumn,
             returning: '*',
         }
         const records = await upsert(payload, { token: this._tablesApiToken })
+        if (!records.length || !records[0]) return
 
         // Map column names back to propertes and assign values.
-        records.length && this.assignProperties(this._properties.fromRecord(records[0]))
+        this.assignProperties(this._properties.fromRecord(records[0]))
 
         // Publish event stating that this live object was upserted.
         await this.publishChange()
@@ -315,18 +342,20 @@ class LiveObject {
     async query(
         table: string,
         where: StringKeyMap | StringKeyMap[] = [],
-        options?: QuerySelectOptions
+        options: QuerySelectOptions = {},
+        prod: boolean = true
     ): Promise<any[]> {
         const filters = Array.isArray(where) ? where : [where]
+        const method = prod ? prodSelect : select
         const records =
-            (await select(table, filters, options, { token: this._tablesApiToken })) || []
+            (await method(table, filters, options, { token: this._tablesApiToken })) || []
         return humps.camelizeKeys(records)
     }
 
     async getCurrentBlock(): Promise<Block> {
         if (this.currentBlock) return this.currentBlock
         const { chainId, blockHash } = this.currentOrigin
-        const tablePath = [schemaForChainId[chainId], 'blocks'].join('.')
+        const tablePath = [schemaForChainId(chainId), 'blocks'].join('.')
         const records = await this.query(tablePath, { hash: blockHash }, { limit: 1 })
         this.currentBlock = records[0]
         return this.currentBlock
@@ -335,7 +364,7 @@ class LiveObject {
     async getCurrentTransaction(): Promise<Transaction> {
         if (this.currentTransaction) return this.currentTransaction
         const { chainId, transactionHash } = this.currentOrigin
-        const tablePath = [schemaForChainId[chainId], 'transactions'].join('.')
+        const tablePath = [schemaForChainId(chainId), 'transactions'].join('.')
         const records = await this.query(tablePath, { hash: transactionHash }, { limit: 1 })
         this.currentTransaction = records[0]
         return this.currentTransaction
@@ -367,8 +396,19 @@ class LiveObject {
         this._publishEventQueue.push({ name, data })
     }
 
-    registerContract(address: string, chainId: string, group: string) {
-        this._contractRegistrationQueue.push({ address, chainId, group })
+    addContractToGroup(address: string, group: string) {
+        this._contractRegistrationQueue.push({ address, chainId: this.chainId, group })
+    }
+
+    getAbi(contractGroup: string): Abi | null {
+        return this._inputContractGroupAbis[contractGroup] || null
+    }
+
+    bind(contractAddress: Address, contractGroup?: string, chainId?: ChainId): any {
+        const abi = contractGroup ? this.getAbi(contractGroup) : this.contract?._abi
+        chainId = chainId || this.chainId
+        if (!abi) throw `No ABI for contract group: ${contractGroup}`
+        return new Contract(chainId, contractAddress, abi) as any
     }
 
     async getEventName(): Promise<string> {
@@ -436,6 +476,43 @@ class LiveObject {
             columns: columnSpecs,
             uniqueBy,
             indexBy,
+        }
+    }
+
+    async liveObjectSpec(): Promise<StringKeyMap> {
+        await this._fsPromises()
+
+        const chains = this._liveObjectChainIds || []
+        const chainsConfig = {}
+        chains.forEach((id) => {
+            chainsConfig[id] = {} // future
+        })
+
+        let primaryTimestampProperty: string | null = null
+        const properties: StringKeyMap = []
+        for (const { name, options, metadata } of Object.values(this._properties.registry)) {
+            properties.push({ name, type: metadata?.type, desc: '...' })
+            if (options.primaryTimestamp) {
+                primaryTimestampProperty = name
+            }
+        }
+
+        return {
+            namespace: this._liveObjectNsp,
+            name: this._liveObjectName,
+            version: this._liveObjectVersion,
+            displayName: this._liveObjectDisplayName,
+            description: this._liveObjectDescription,
+            chains,
+            properties,
+            config: {
+                primaryTimestampProperty,
+                uniqueBy: toArrayOfArrays(this._properties.uniqueBy),
+                table: this._table,
+                chains: chainsConfig,
+            },
+            inputEvents: Object.keys(this._eventHandlers || {}),
+            inputCalls: Object.keys(this._callHandlers || {}),
         }
     }
 
@@ -552,6 +629,18 @@ class LiveObject {
                 throw `Live object before-call handler is not callable: this[${methodName}]`
             await beforeCallHandler(call)
         }
+    }
+
+    _assignInputContract(input: StringKeyMap) {
+        const contractGroup = getContractGroupFromInputName(input.name)
+        if (!contractGroup) throw `Not able to infer contract group from input: ${input.name}`
+        const inputContractAbi = this._inputContractGroupAbis[contractGroup]
+        if (!inputContractAbi) throw `No ABI for contract group: ${contractGroup}`
+        this.contract = new Contract(
+            this.currentOrigin.chainId,
+            this.currentOrigin.contractAddress,
+            inputContractAbi
+        )
     }
 
     async _fsPromises() {

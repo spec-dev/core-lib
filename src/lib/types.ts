@@ -27,8 +27,19 @@ export {
     Block,
     Transaction,
 } from '@spec.types/spec'
+export { Abi, AbiItem, AbiItemType, MetaProtocolId, ContractCallResponse } from '@spec.dev/rpc'
 
-export type ChainId = string
+// Pretty much just for case-matching when building live object properties (if desired).
+export type String = string
+export type Boolean = boolean
+export type Number = number
+
+export enum ChainId {
+    Ethereum = '1',
+    Goerli = '5',
+    Polygon = '137',
+    Mumbai = '80001',
+}
 
 export type BlockNumber = BigInt
 
@@ -140,6 +151,7 @@ export type UpsertComps = {
     insertData: StringKeyMap | StringKeyMap[]
     conflictColumns: string[]
     updateColumns: string[]
+    primaryTimestampColumn: string
 }
 
 export type Manifest = {

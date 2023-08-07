@@ -30,14 +30,14 @@ export function guessColType(t: string): string {
         case CHAIN_ID.toLowerCase():
         case BLOCK_HASH.toLowerCase():
         case TRANSACTION_HASH.toLowerCase():
+        case BIG_INT.toLowerCase(): // extra protection
             return VARCHAR
 
         // Integer
         case NUMBER:
             return INT4
 
-        // Big Ints.
-        case BIG_INT.toLowerCase():
+        // Big Ints (within range - i.e. block number)
         case BLOCK_NUMBER.toLowerCase():
             return INT8
 
