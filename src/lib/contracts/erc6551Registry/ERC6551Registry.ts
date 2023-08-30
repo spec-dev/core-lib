@@ -44,14 +44,13 @@ class ERC6551Registry {
         tokenId: ContractType.Number,
         salt: ContractType.Number
     ): Promise<ContractType.Address> {
-        const { outputArgs } = await this._methods.account(
+        return this._methods.account(
             implementation,
             chainId.toString(),
             tokenContract,
             tokenId.toString(),
             salt.toString()
         )
-        return outputArgs[0]
     }
 
     /**
@@ -70,7 +69,7 @@ class ERC6551Registry {
         salt: ContractType.Number,
         initData: ContractType.Bytes
     ): Promise<string> {
-        const { outputArgs } = await this._methods.createAccount(
+        return this._methods.createAccount(
             implementation,
             chainId.toString(),
             tokenContract,
@@ -78,7 +77,6 @@ class ERC6551Registry {
             salt.toString(),
             initData
         )
-        return outputArgs[0]
     }
 }
 

@@ -62,9 +62,8 @@ export interface CallOrigin {
     blockNumber: BlockNumber
     blockHash: BlockHash
     blockTimestamp: Timestamp
-    transactionHash: TransactionHash
     contractAddress: Address
-    contractName: string
+    transactionHash: TransactionHash
     signature: string
 }
 

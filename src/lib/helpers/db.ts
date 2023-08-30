@@ -3,6 +3,8 @@ import { UpsertPayload } from '@spec.dev/tables'
 import { tx } from '../tables'
 
 export async function saveAll(...liveObjects: LiveObject[]) {
+    liveObjects = liveObjects.filter((v) => !!v)
+
     // Get upsert payloads for each live object.
     const payloads = (
         await Promise.all(
