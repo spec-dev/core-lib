@@ -404,11 +404,16 @@ class LiveObject {
         return this._inputContractGroupAbis[contractGroup] || null
     }
 
-    bind(contractAddress: Address, contractGroup?: string, chainId?: ChainId): any {
+    bind(
+        contractAddress: Address,
+        contractGroup?: string,
+        chainId?: ChainId,
+        withRpcResponseSyntax: boolean = true
+    ): any {
         const abi = contractGroup ? this.getAbi(contractGroup) : this.contract?._abi
         chainId = chainId || this.chainId
         if (!abi) throw `No ABI for contract group: ${contractGroup}`
-        return new Contract(chainId, contractAddress, abi) as any
+        return new Contract(chainId, contractAddress, abi, withRpcResponseSyntax) as any
     }
 
     async getEventName(): Promise<string> {
