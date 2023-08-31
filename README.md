@@ -1,1 +1,5 @@
-# Spec Core Library
+# Spec Indexing Protocol & Core Library
+
+# License
+
+MIT
