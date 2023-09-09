@@ -100,6 +100,7 @@ serve(async (req: Request) => {
     for (let i = 0; i < inputs.length; i++) {
         const input = inputs[i] as any
         input.origin.blockNumber = BigInt.from(input.origin.blockNumber)
+        input.origin.blockTimestamp = new Date(input.origin.blockTimestamp)
 
         // Create the live object with a single event queue instance to capture published events
         // and a single contract registration queue to capture new contracts to be registered.

@@ -30,7 +30,7 @@ import humps from './utils/humps'
 import { camelToSnake, unique, getContractGroupFromInputName } from './utils/formatters'
 import { blockSpecificProperties } from './utils/defaults'
 import Contract from './contracts/Contract'
-import { BIG_FLOAT, BIG_INT, BLOCK_NUMBER } from './utils/propertyTypes'
+import { BIG_FLOAT, BIG_INT, BLOCK_NUMBER, TIMESTAMP, DATE } from './utils/propertyTypes'
 import { BigInt, BigFloat } from './helpers'
 
 class LiveTable {
@@ -152,6 +152,10 @@ class LiveTable {
                             break
                         case BIG_FLOAT:
                             this[propertyName] = BigFloat.from(options.default)
+                            break
+                        case DATE:
+                        case TIMESTAMP:
+                            this[propertyName] = new Date(options.default)
                             break
                         default:
                             this[propertyName] = options.default
