@@ -15,12 +15,11 @@ export {
     QueryAuthOptions,
     QueryPayload,
 }
-import { StringKeyMap, Timestamp, Address, TransactionHash, BlockHash } from '@spec.types/spec'
+import { StringKeyMap, Address, TransactionHash, BlockHash } from '@spec.types/spec'
 export {
     Address,
     BlockHash,
     TransactionHash,
-    Timestamp,
     Json,
     StringKeyMap,
     StringMap,
@@ -42,6 +41,7 @@ export enum ChainId {
 }
 
 export type BlockNumber = BigInt
+export type Timestamp = Date
 
 export interface EventOrigin {
     eventTimestamp: Timestamp
