@@ -23,6 +23,7 @@ import {
     BLOCK_NUMBER,
     guessColType,
 } from './utils/propertyTypes'
+import { JSON as JsonColType } from './utils/columnTypes'
 import { BigFloat, BigInt } from './helpers'
 
 class Properties {
@@ -231,9 +232,15 @@ class Properties {
             const metadata = info.metadata || ({} as PropertyMetadata)
             const options = info.options || ({} as PropertyOptions)
             const columnType = options.columnType || guessColType(metadata.type)
-            const defaultValue = options.hasOwnProperty('default')
-                ? options.default.toString()
-                : null
+
+            let defaultValue: any = null
+            if (options.hasOwnProperty('default')) {
+                if (columnType === JsonColType && typeof options.default === 'object') {
+                    defaultValue = JSON.stringify(options.default)
+                } else {
+                    defaultValue = options.default.toString()
+                }
+            }
 
             schema[columnName] = {
                 type: columnType,

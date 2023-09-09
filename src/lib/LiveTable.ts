@@ -118,7 +118,6 @@ class LiveTable {
         }
 
         this._addBlockSpecificPropertiesToRegistry()
-
         this._properties = new Properties(this._propertyRegistry, uniqueBy as string[])
 
         this._setPropertyMetadataPromise = this._propertyMetadataPromise.then(
@@ -126,8 +125,11 @@ class LiveTable {
                 // Set standard property metadata.
                 for (const key in propertyMetadata || {}) {
                     const metadata = propertyMetadata[key] || {}
-                    if (this._propertyRegistry.hasOwnProperty(key)) {
-                        this._propertyRegistry[key].metadata = metadata
+                    if (!this._propertyRegistry.hasOwnProperty(key)) continue
+                    this._propertyRegistry[key].metadata = metadata
+                    const options = this._propertyRegistry[key].options || {}
+                    if (metadata.type?.endsWith('[]') && !options.hasOwnProperty('default')) {
+                        this._propertyRegistry[key].options.default = []
                     }
                 }
                 // Add metadata for default block-specific properties.
