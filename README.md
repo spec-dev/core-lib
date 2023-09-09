@@ -1,5 +1,5 @@
 # Spec Indexing Protocol & Core Library
 
-# License
+## License
 
 MIT

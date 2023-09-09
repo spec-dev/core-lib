@@ -1,13 +1,8 @@
-import {
-    LiveObjectOptions,
-    PropertyOptions,
-    EventHandlerOptions,
-    CallHandlerOptions,
-} from './types'
+import { LiveTableOptions, PropertyOptions, EventHandlerOptions, CallHandlerOptions } from './types'
 import caller from './utils/caller'
 import { readManifest, buildPropertyMetadata } from './utils/file'
 
-export function Spec(options: LiveObjectOptions): ClassDecorator {
+export function Spec(options: LiveTableOptions): ClassDecorator {
     const callerFilePath = caller()
     const manifestPromise = readManifest(callerFilePath)
     const propertyMetadataPromise = buildPropertyMetadata(callerFilePath)
@@ -40,7 +35,7 @@ export function OnEvent(eventName: string, options: EventHandlerOptions = {}): P
     }
 }
 
-export function OnAllEvents(): PropertyDecorator {
+export function BeforeAll(): PropertyDecorator {
     return function (object: any, methodName: string | symbol) {
         object.constructor.prototype._beforeEventHandlers =
             object.constructor.prototype._beforeEventHandlers || []
@@ -56,13 +51,5 @@ export function OnCall(functionName: string, options: CallHandlerOptions = {}): 
             functionName += `@${options.signature}`
         }
         object.constructor.prototype._callHandlers[functionName] = { methodName, options }
-    }
-}
-
-export function OnAllCalls(): PropertyDecorator {
-    return function (object: any, methodName: string | symbol) {
-        object.constructor.prototype._beforeCallHandlers =
-            object.constructor.prototype._beforeCallHandlers || []
-        object.constructor.prototype._beforeCallHandlers.push(methodName)
     }
 }

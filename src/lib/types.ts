@@ -89,7 +89,7 @@ export type Event = TypedEvent<StringKeyMap>
 
 export type EventMulti = TypedEvent<StringKeyMap[]>
 
-export type LiveObjectOptions = {
+export type LiveTableOptions = {
     uniqueBy: string | string[] | string[][]
     table?: string
     indexBy?: string | string[] | string[][]

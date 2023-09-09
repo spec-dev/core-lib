@@ -1,5 +1,5 @@
 import {
-    LiveObjectOptions,
+    LiveTableOptions,
     EventHandler,
     RegisteredEventHandler,
     RegisteredCallHandler,
@@ -30,8 +30,10 @@ import humps from './utils/humps'
 import { camelToSnake, unique, getContractGroupFromInputName } from './utils/formatters'
 import { blockSpecificProperties } from './utils/defaults'
 import Contract from './contracts/Contract'
+import { BIG_FLOAT, BIG_INT, BLOCK_NUMBER } from './utils/propertyTypes'
+import { BigInt, BigFloat } from './helpers'
 
-class LiveObject {
+class LiveTable {
     declare _liveObjectNsp: string
 
     declare _liveObjectName: string
@@ -44,7 +46,7 @@ class LiveObject {
 
     declare _liveObjectChainIds: string[]
 
-    declare _options: LiveObjectOptions
+    declare _options: LiveTableOptions
 
     declare _table: string
 
@@ -63,8 +65,6 @@ class LiveObject {
     declare _callHandlers: { [key: string]: RegisteredCallHandler }
 
     declare _beforeEventHandlers: string[]
-
-    declare _beforeCallHandlers: string[]
 
     declare contract: any
 
@@ -140,6 +140,24 @@ class LiveObject {
                         this._propertyRegistry[propertyName].metadata = { type }
                     }
                 }
+                // Assign values for properties with defaults.
+                for (const propertyName in this._propertyRegistry) {
+                    const { options } = this._propertyRegistry[propertyName]
+                    if (!options.hasOwnProperty('default')) continue
+                    const propertyType = propertyMetadata[propertyName].type
+                    switch (propertyType) {
+                        case BIG_INT:
+                        case BLOCK_NUMBER:
+                            this[propertyName] = BigInt.from(options.default)
+                            break
+                        case BIG_FLOAT:
+                            this[propertyName] = BigFloat.from(options.default)
+                            break
+                        default:
+                            this[propertyName] = options.default
+                            break
+                    }
+                }
                 this._properties.registry = this._propertyRegistry
             }
         )
@@ -175,7 +193,7 @@ class LiveObject {
 
         // Execute all "before-event" handlers and then call the actual handler itself.
         this._assignBlockSpecificPropertiesFromOrigin()
-        await this._performBeforeEventHandlers(event)
+        if (!(await this._performBeforeEventHandlers(event))) return false
         const resp = await method(event)
 
         // Return whether to auto-save or not.
@@ -197,18 +215,17 @@ class LiveObject {
         // Create a new Contract instance pointing to this method's origin contract.
         this._assignInputContract(call)
 
-        // Execute all "before-call" handlers and then call the actual handler itself.
+        // Handle the contract call.
         this._assignBlockSpecificPropertiesFromOrigin()
-        await this._performBeforeCallHandlers(call)
         const resp = await method(call)
 
         // Return whether to auto-save or not.
         return handlerOptions.autoSave === false || resp === false ? false : true
     }
 
-    new(liveObjectType, initialProperties: StringKeyMap = {}) {
+    new(liveTableType, initialProperties: StringKeyMap = {}) {
         // Create new live object and pass event response queue for execution context.
-        const newLiveObject = new liveObjectType(
+        const newLiveObject = new liveTableType(
             {},
             this._publishEventQueue,
             this._contractRegistrationQueue
@@ -233,11 +250,11 @@ class LiveObject {
     }
 
     async find(
-        liveObjectType,
+        liveTableType,
         where: StringKeyMap | StringKeyMap[] = [],
         options?: QuerySelectOptions
     ): Promise<any[]> {
-        const referenceObject = new liveObjectType()
+        const referenceObject = new liveTableType()
         await referenceObject._fsPromises()
         const table = referenceObject._table
         if (!table) throw `Type has no table to query`
@@ -269,7 +286,7 @@ class LiveObject {
         // Convert back into live object type / property types.
         return await Promise.all(
             records.map(async (record) => {
-                const liveObject = new liveObjectType(
+                const liveObject = new liveTableType(
                     {},
                     this._publishEventQueue,
                     this._contractRegistrationQueue
@@ -284,12 +301,12 @@ class LiveObject {
     }
 
     async findOne(
-        liveObjectType,
+        liveTableType,
         where: StringKeyMap | StringKeyMap[],
         options?: QuerySelectOptions
     ) {
         options = { ...(options || {}), limit: 1 }
-        const records = await this.find(liveObjectType, where, options)
+        const records = await this.find(liveTableType, where, options)
         return records.length ? records[0] : null
     }
 
@@ -420,7 +437,7 @@ class LiveObject {
         await this._fsPromises()
         return toNamespacedVersion(
             this._liveObjectNsp,
-            `${this._liveObjectName}Upserted`,
+            `${this._liveObjectName}Changed`,
             this._liveObjectVersion
         )
     }
@@ -614,7 +631,7 @@ class LiveObject {
         return null
     }
 
-    async _performBeforeEventHandlers(event: Event) {
+    async _performBeforeEventHandlers(event: Event): Promise<boolean> {
         const methodNames = this._beforeEventHandlers || []
         for (const methodName of methodNames) {
             const beforeEventHandler = ((this as StringKeyMap)[methodName] as EventHandler).bind(
@@ -622,18 +639,10 @@ class LiveObject {
             )
             if (!beforeEventHandler)
                 throw `Live object before-event handler is not callable: this[${methodName}]`
-            await beforeEventHandler(event)
+            const resp = await beforeEventHandler(event)
+            if (resp === false) return false
         }
-    }
-
-    async _performBeforeCallHandlers(call: Call) {
-        const methodNames = this._beforeCallHandlers || []
-        for (const methodName of methodNames) {
-            const beforeCallHandler = ((this as StringKeyMap)[methodName] as CallHandler).bind(this)
-            if (!beforeCallHandler)
-                throw `Live object before-call handler is not callable: this[${methodName}]`
-            await beforeCallHandler(call)
-        }
+        return true
     }
 
     _assignInputContract(input: StringKeyMap) {
@@ -653,4 +662,4 @@ class LiveObject {
     }
 }
 
-export default LiveObject
+export default LiveTable

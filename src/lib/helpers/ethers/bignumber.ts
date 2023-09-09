@@ -56,6 +56,18 @@ export class BigNumber implements Hexable {
         Object.freeze(this)
     }
 
+    static zero(): BigNumber {
+        return BigNumber.from(0)
+    }
+
+    static one(): BigNumber {
+        return BigNumber.from(1)
+    }
+
+    static two(): BigNumber {
+        return BigNumber.from(2)
+    }
+
     fromTwos(value: number): BigNumber {
         return toBigNumber(toBN(this).fromTwos(value))
     }

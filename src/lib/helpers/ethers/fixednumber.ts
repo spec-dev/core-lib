@@ -279,6 +279,32 @@ export class FixedNumber {
         }
     }
 
+    static zero(): FixedNumber {
+        return FixedNumber.from('0')
+    }
+
+    static one(): FixedNumber {
+        return FixedNumber.from('1')
+    }
+
+    static two(): FixedNumber {
+        return FixedNumber.from('2')
+    }
+
+    add(other: any): FixedNumber {
+        return this.addUnsafe(FixedNumber.from(other.toString()))
+    }
+    plus(other: any): FixedNumber {
+        return this.add(other)
+    }
+
+    sub(other: any): FixedNumber {
+        return this.subUnsafe(FixedNumber.from(other.toString()))
+    }
+    minus(other: any): FixedNumber {
+        return this.sub(other)
+    }
+
     addUnsafe(other: FixedNumber): FixedNumber {
         this._checkFormat(other)
         const a = parseFixed(this._value, this.format.decimals)
@@ -303,6 +329,12 @@ export class FixedNumber {
             this.format
         )
     }
+    mul(other: any): FixedNumber {
+        return this.mulUnsafe(FixedNumber.from(other.toString()))
+    }
+    times(other: any): FixedNumber {
+        return this.mul(other)
+    }
 
     divUnsafe(other: FixedNumber): FixedNumber {
         this._checkFormat(other)
@@ -313,6 +345,9 @@ export class FixedNumber {
             this.format.decimals,
             this.format
         )
+    }
+    div(other: any): FixedNumber {
+        return this.divUnsafe(FixedNumber.from(other.toString()))
     }
 
     floor(): FixedNumber {

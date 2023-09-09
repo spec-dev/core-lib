@@ -4,6 +4,7 @@ export const STRING = 'string'
 export const NUMBER = 'number'
 export const BOOLEAN = 'boolean'
 export const BIG_INT = 'BigInt'
+export const BIG_FLOAT = 'BigFloat'
 export const BLOCK_NUMBER = 'BlockNumber'
 export const TIMESTAMP = 'Timestamp'
 export const ADDRESS = 'Address'
@@ -30,14 +31,15 @@ export function guessColType(t: string): string {
         case CHAIN_ID.toLowerCase():
         case BLOCK_HASH.toLowerCase():
         case TRANSACTION_HASH.toLowerCase():
-        case BIG_INT.toLowerCase(): // extra protection
+        case BIG_INT.toLowerCase():
+        case BIG_FLOAT.toLowerCase():
             return VARCHAR
 
         // Integer
         case NUMBER:
             return INT4
 
-        // Big Ints (within range - i.e. block number)
+        // Block numbers will be int8 for now.
         case BLOCK_NUMBER.toLowerCase():
             return INT8
 
@@ -50,12 +52,7 @@ export function guessColType(t: string): string {
         case TIMESTAMP.toLowerCase():
             return TIMESTAMPTZ
 
-        // JSON
-        case OBJECT:
-        case JSON_PROPERTY_TYPE.toLowerCase():
-            return JSON
-
         default:
-            throw `Unable to guess column type for property type "${t}"`
+            return JSON
     }
 }

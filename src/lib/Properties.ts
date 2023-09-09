@@ -1,4 +1,4 @@
-import LiveObject from './LiveObject'
+import LiveTable from './LiveTable'
 import {
     PropertyMetadata,
     PropertyOptions,
@@ -19,10 +19,11 @@ import {
     NUMBER,
     DATE,
     BIG_INT,
+    BIG_FLOAT,
     BLOCK_NUMBER,
     guessColType,
 } from './utils/propertyTypes'
-import { BigInt } from './helpers'
+import { BigFloat, BigInt } from './helpers'
 
 class Properties {
     registry: { [key: string]: RegisteredProperty }
@@ -65,7 +66,7 @@ class Properties {
         }
     }
 
-    getLoadFilters(liveObject: LiveObject): StringKeyMap {
+    getLoadFilters(liveObject: LiveTable): StringKeyMap {
         const filters = {}
         for (const propertyName of this.uniqueBy) {
             const value = liveObject[propertyName]
@@ -77,7 +78,7 @@ class Properties {
         return filters
     }
 
-    getUpsertComps(liveObject: LiveObject): UpsertComps | null {
+    getUpsertComps(liveObject: LiveTable): UpsertComps | null {
         // Get a map of the properties that currently hold values.
         const propertyData = this.withValues(liveObject)
 
@@ -115,7 +116,7 @@ class Properties {
         }
     }
 
-    capture(liveObject: LiveObject) {
+    capture(liveObject: LiveTable) {
         const snapshot = {}
         for (const propertyName in this.registry) {
             snapshot[propertyName] = liveObject[propertyName]
@@ -123,7 +124,7 @@ class Properties {
         this.snapshot = snapshot
     }
 
-    haveChanged(liveObject: LiveObject) {
+    haveChanged(liveObject: LiveTable) {
         if (!Object.keys(this.snapshot).length) return true
 
         for (const propertyName in this.registry) {
@@ -134,7 +135,7 @@ class Properties {
         return false
     }
 
-    withValues(liveObject: LiveObject): StringKeyMap {
+    withValues(liveObject: LiveTable): StringKeyMap {
         const withValues = {}
         for (const propertyName in this.registry) {
             const value = liveObject[propertyName]
@@ -195,8 +196,9 @@ class Properties {
         if (isDate(value)) return value.toISOString()
         if (lowerType === NUMBER) return attemptToParseNumber(value)
         if (lowerType === BOOLEAN) return Boolean(value)
-        if (type === BIG_INT || type === BLOCK_NUMBER) return value.toString()
-        if (type === 'json' || typeof value === 'object') return stringify(value)
+        // @ts-ignore
+        if ([BIG_INT, BIG_FLOAT, BLOCK_NUMBER].includes(type)) return value.toString()
+        if (lowerType === 'json' || typeof value === 'object') return stringify(value)
         return value
     }
 
@@ -207,6 +209,7 @@ class Properties {
         if (lowerType === NUMBER) return attemptToParseNumber(value)
         if (lowerType === BOOLEAN) return Boolean(value)
         if (type === BIG_INT || type === BLOCK_NUMBER) return BigInt.from(value)
+        if (type === BIG_FLOAT) return BigFloat.from(value)
         return value
     }
 

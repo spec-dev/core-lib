@@ -1,8 +1,8 @@
-import LiveObject from '../LiveObject'
+import LiveTable from '../LiveTable'
 import { UpsertPayload } from '@spec.dev/tables'
 import { tx } from '../tables'
 
-export async function saveAll(...liveObjects: LiveObject[]) {
+export async function saveAll(...liveObjects: LiveTable[]) {
     liveObjects = liveObjects.filter((v) => !!v)
 
     // Get upsert payloads for each live object.
