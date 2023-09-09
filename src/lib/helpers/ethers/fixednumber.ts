@@ -522,6 +522,10 @@ export class FixedNumber {
             return FixedNumber.fromBytes(value, format)
         }
 
+        if (typeof value === 'number') {
+            return FixedNumber.fromString(value.toString(), format)
+        }
+
         try {
             return FixedNumber.fromValue(value, 0, format)
         } catch (error) {
