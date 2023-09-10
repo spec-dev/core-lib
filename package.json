@@ -1,6 +1,6 @@
 {
     "name": "@spec.dev/core",
-    "version": "0.0.113",
+    "version": "0.0.114",
     "description": "Spec Core Library",
     "keywords": [
         "javascript",
@@ -35,6 +35,7 @@
         "@spec.dev/tables": "^0.0.20",
         "@spec.types/spec": "^0.0.27",
         "bn.js": "^5.2.1",
+        "keccak256": "^1.0.6",
         "strip-comments": "^2.0.1"
     },
     "devDependencies": {

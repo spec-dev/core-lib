@@ -1,6 +1,7 @@
 export * from './constants'
 export * from './formatters'
 export * from './validators'
+export * from './crypto'
 export { saveAll } from './db'
 export { BigNumber as BigInt } from './ethers/bignumber'
 export { FixedNumber as BigFloat } from './ethers/fixednumber'
