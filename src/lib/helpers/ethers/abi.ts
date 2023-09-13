@@ -17,13 +17,13 @@ export const decodeAbi = (
     data: BytesLike,
     types: ReadonlyArray<string | ParamType>,
     loose?: boolean
-): Result => {
-    const result = defaultAbiCoder.decode(types, data, loose)
+): any[] => {
+    const result = defaultAbiCoder.decode(types, data, loose).concat()
     typeConvert(result)
     return result
 }
 
-function typeConvert(arr) {
+function typeConvert(arr: any[]) {
     for (let i = 0; i < arr.length; i++) {
         if (Array.isArray(arr[i])) {
             typeConvert(arr[i])
