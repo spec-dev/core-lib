@@ -1,6 +1,6 @@
 {
     "name": "@spec.dev/core",
-    "version": "0.0.116",
+    "version": "0.0.117",
     "description": "Spec Core Library",
     "keywords": [
         "javascript",
@@ -31,6 +31,7 @@
         "types-generate": "dts-gen -m '@spec.dev/core' -s"
     },
     "dependencies": {
+        "@ethersproject/abi": "^5.7.0",
         "@spec.dev/rpc": "^0.0.4",
         "@spec.dev/tables": "^0.0.20",
         "@spec.types/spec": "^0.0.27",
