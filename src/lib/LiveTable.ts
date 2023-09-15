@@ -215,6 +215,10 @@ class LiveTable {
             this._contractRegistrationQueue
         )
         newLiveObject._tablesApiToken = this._tablesApiToken
+        newLiveObject.currentBlock = this.currentBlock
+        newLiveObject.currentTransaction = this.currentTransaction
+        newLiveObject.currentOrigin = this.currentOrigin
+        newLiveObject.contract = this.contract
 
         // Pass any block-specific properties over unless included in properties given.
         for (const propertyName in blockSpecificProperties) {
@@ -277,8 +281,21 @@ class LiveTable {
                 )
                 await liveObject._fsPromises()
                 liveObject._tablesApiToken = this._tablesApiToken
+                liveObject.currentBlock = this.currentBlock
+                liveObject.currentTransaction = this.currentTransaction
+                liveObject.currentOrigin = this.currentOrigin
+                liveObject.contract = this.contract
+
                 const propertyData = liveObject._properties.fromRecord(record)
                 liveObject.assignProperties(propertyData)
+
+                if (
+                    !liveObject.chainId ||
+                    liveObject.chainId === liveObject.currentOrigin.chainId
+                ) {
+                    liveObject._assignBlockSpecificPropertiesFromOrigin()
+                }
+
                 return liveObject
             })
         )
@@ -307,12 +324,19 @@ class LiveTable {
 
         // Assign retrieved property values if record existed.
         const exists = records.length > 0
-        exists && this.assignProperties(this._properties.fromRecord(records[0]))
+        if (exists) {
+            this.assignProperties(this._properties.fromRecord(records[0]))
+            if (!this.chainId || this.chainId === this.currentOrigin.chainId) {
+                this._assignBlockSpecificPropertiesFromOrigin()
+            }
+        }
+
         return exists
     }
 
     async save() {
         await this._fsPromises()
+
         // Ensure properties have changed since last snapshot.
         if (!this._properties.haveChanged(this)) return
 
@@ -528,7 +552,7 @@ class LiveTable {
         for (const propertyName in blockSpecificProperties) {
             if (
                 this._propertyRegistry.hasOwnProperty(propertyName) &&
-                this.currentOrigin.hasOwnProperty(propertyName)
+                this.currentOrigin?.hasOwnProperty(propertyName)
             ) {
                 this[propertyName] = this.currentOrigin[propertyName]
             }
