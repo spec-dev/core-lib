@@ -30,8 +30,6 @@ import humps from './utils/humps'
 import { camelToSnake, unique, getContractGroupFromInputName } from './utils/formatters'
 import { blockSpecificProperties } from './utils/defaults'
 import Contract from './contracts/Contract'
-import { BIG_FLOAT, BIG_INT, BLOCK_NUMBER, TIMESTAMP, DATE } from './utils/propertyTypes'
-import { BigInt, BigFloat } from './helpers'
 
 class LiveTable {
     declare _liveObjectNsp: string
@@ -142,28 +140,6 @@ class LiveTable {
                         this._propertyRegistry[propertyName].metadata = { type }
                     }
                 }
-                // Assign values for properties with defaults.
-                for (const propertyName in this._propertyRegistry) {
-                    const { options } = this._propertyRegistry[propertyName]
-                    if (!options.hasOwnProperty('default')) continue
-                    const propertyType = propertyMetadata[propertyName].type
-                    switch (propertyType) {
-                        case BIG_INT:
-                        case BLOCK_NUMBER:
-                            this[propertyName] = BigInt.from(options.default)
-                            break
-                        case BIG_FLOAT:
-                            this[propertyName] = BigFloat.from(options.default)
-                            break
-                        case DATE:
-                        case TIMESTAMP:
-                            this[propertyName] = new Date(options.default)
-                            break
-                        default:
-                            this[propertyName] = options.default
-                            break
-                    }
-                }
                 this._properties.registry = this._propertyRegistry
             }
         )
@@ -184,6 +160,7 @@ class LiveTable {
 
     async handleEvent(event: Event): Promise<boolean> {
         this.currentOrigin = event.origin
+        this.currentTransaction = this.currentOrigin.transaction || {}
 
         // Get event handler method by name.
         const handler = this._getEventHandlerForEventName(event)
@@ -208,6 +185,7 @@ class LiveTable {
 
     async handleCall(call: Call): Promise<boolean> {
         this.currentOrigin = call.origin
+        this.currentTransaction = this.currentOrigin.transaction || {}
 
         // Get call handler method by name.
         const handler = this._getCallHandlerForFunctionName(call)

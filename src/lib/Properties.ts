@@ -120,7 +120,21 @@ class Properties {
     capture(liveObject: LiveTable) {
         const snapshot = {}
         for (const propertyName in this.registry) {
-            snapshot[propertyName] = liveObject[propertyName]
+            let currentValue = liveObject[propertyName]
+
+            if (typeof currentValue === 'object' && currentValue !== null) {
+                if (Array.isArray(currentValue)) {
+                    currentValue = [...currentValue]
+                } else if (!currentValue._isBigNumber) {
+                    try {
+                        currentValue = { ...currentValue }
+                    } catch (e) {
+                        currentValue = liveObject[propertyName]
+                    }
+                }
+            }
+
+            snapshot[propertyName] = currentValue
         }
         this.snapshot = snapshot
     }

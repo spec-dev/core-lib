@@ -15,7 +15,7 @@ export {
     QueryAuthOptions,
     QueryPayload,
 }
-import { StringKeyMap, Address, TransactionHash, BlockHash } from '@spec.types/spec'
+import { StringKeyMap, Address, TransactionHash, BlockHash, Transaction } from '@spec.types/spec'
 export {
     Address,
     BlockHash,
@@ -50,6 +50,7 @@ export interface EventOrigin {
     blockHash: BlockHash
     blockTimestamp: Timestamp
     contractAddress?: Address
+    transaction?: Transaction
     transactionHash?: TransactionHash
     transactionIndex?: number
     logIndex?: number
@@ -63,6 +64,7 @@ export interface CallOrigin {
     blockHash: BlockHash
     blockTimestamp: Timestamp
     contractAddress: Address
+    transaction?: Transaction
     transactionHash: TransactionHash
     signature: string
 }

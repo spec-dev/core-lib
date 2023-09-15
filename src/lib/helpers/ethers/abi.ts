@@ -2,10 +2,6 @@ import { defaultAbiCoder, ParamType } from '@ethersproject/abi'
 import { BytesLike } from './bytes'
 import { BigNumber as BigInt } from './bignumber'
 
-interface Result extends ReadonlyArray<any> {
-    readonly [key: string]: any
-}
-
 export const encodeAbi = (
     values: ReadonlyArray<any>,
     types: ReadonlyArray<string | ParamType>
