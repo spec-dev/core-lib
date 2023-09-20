@@ -179,3 +179,9 @@ export type TableSpec = {
     uniqueBy?: string[][]
     indexBy?: string[][]
 }
+
+export interface ERC20TokenMetadata {
+    name: string | null
+    symbol: string | null
+    decimals: number | null
+}
