@@ -23,3 +23,10 @@ export class ResolveMetadataError extends Error {
         this.name = 'Metadata Resolution Error'
     }
 }
+
+export class ERC20TokenMetadataError extends Error {
+    constructor(chainId: string | number, tokenAddress: string, error: any) {
+        super(`(chainId=${chainId}; tokenAddress=${tokenAddress}: ${stringify(error, error)}`)
+        this.name = 'ERC-20 Token Metadata Error'
+    }
+}

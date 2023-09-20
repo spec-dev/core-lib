@@ -5,4 +5,4 @@ export { LiveTable as LiveObject, Queue }
 export * from './lib/contracts'
 export * from './lib/types'
 export * from './lib/helpers'
-export { resolveMetadata } from './lib/rpc'
+export { resolveMetadata, getERC20TokenMetadata } from './lib/rpc'

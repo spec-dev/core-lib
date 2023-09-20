@@ -6,7 +6,7 @@ import {
     ContractCallResponse,
 } from '@spec.dev/rpc'
 import { StringKeyMap } from './types'
-import { ContractCallError, ResolveMetadataError } from './errors'
+import { ContractCallError, ResolveMetadataError, ERC20TokenMetadataError } from './errors'
 
 const rpcClient = new SpecRpcClient()
 
@@ -39,5 +39,16 @@ export async function resolveMetadata(
         if (required) throw new ResolveMetadataError(pointer, protocolId || null, err)
         console.error(err)
         return fallback
+    }
+}
+
+export async function getERC20TokenMetadata(
+    chainId: string | number,
+    tokenAddress: Address
+): Promise<StringKeyMap> {
+    try {
+        return await rpcClient.getERC20TokenMetadata(chainId, tokenAddress)
+    } catch (err) {
+        throw new ERC20TokenMetadataError(chainId, tokenAddress, err)
     }
 }
