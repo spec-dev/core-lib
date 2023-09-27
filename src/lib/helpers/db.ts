@@ -13,7 +13,6 @@ export async function saveAll(...liveObjects: LiveTable[]) {
         await Promise.all(
             liveObjects.map(async (liveObject) => {
                 await liveObject._fsPromises()
-                if (!liveObject._properties.haveChanged(liveObject)) return null
 
                 const upsertComps = liveObject._properties.getUpsertComps(liveObject)
                 if (!upsertComps) return null
@@ -35,7 +34,7 @@ export async function saveAll(...liveObjects: LiveTable[]) {
         console.log(
             'Empty payload when saving live objects',
             liveObjects.map((lo) => lo._liveObjectName).join(', '),
-            liveObjects.map((lo) => lo._properties.haveChanged(lo)),
+            liveObjects.map((lo) => lo._properties.diffSinceLastSnapshot(lo)),
             liveObjects.map((lo) => !!lo._properties.getUpsertComps(lo))
         )
         return
@@ -53,7 +52,7 @@ export async function saveAll(...liveObjects: LiveTable[]) {
     for (let i = 0; i < results.length; i++) {
         const records = results[i]
         if (!records?.length || !records[0]) continue
-        liveObjects[i].assignProperties(liveObjects[i]._properties.fromRecord(records[0]))
-        await liveObjects[i].publishChange()
+        liveObjects[i]._assignProperties(liveObjects[i]._properties.fromRecord(records[0]))
+        await liveObjects[i]._publishChange()
     }
 }

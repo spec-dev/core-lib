@@ -30,6 +30,8 @@ import humps from './utils/humps'
 import { camelToSnake, unique, getContractGroupFromInputName } from './utils/formatters'
 import { blockSpecificProperties } from './utils/defaults'
 import Contract from './contracts/Contract'
+import { NUMBER, BIG_FLOAT, BIG_INT, BLOCK_NUMBER, TIMESTAMP, DATE } from './utils/propertyTypes'
+import { BigInt, BigFloat } from './helpers'
 
 class LiveTable {
     declare _liveObjectNsp: string
@@ -128,6 +130,11 @@ class LiveTable {
                     const options = this._propertyRegistry[key].options || {}
                     if (metadata.type?.endsWith('[]') && !options.hasOwnProperty('default')) {
                         this._propertyRegistry[key].options.default = []
+                    } else if (
+                        [NUMBER, BIG_INT, BIG_FLOAT].includes(metadata.type) &&
+                        !options.hasOwnProperty('default')
+                    ) {
+                        this._propertyRegistry[key].options.default = 0
                     }
                 }
                 // Add metadata for default block-specific properties.
@@ -140,7 +147,32 @@ class LiveTable {
                         this._propertyRegistry[propertyName].metadata = { type }
                     }
                 }
+                // Assign values for properties with defaults.
+                let defaultSet = false
+                for (const propertyName in this._propertyRegistry) {
+                    const { options } = this._propertyRegistry[propertyName]
+                    if (!options.hasOwnProperty('default')) continue
+                    defaultSet = true
+                    const propertyType = propertyMetadata[propertyName].type
+                    switch (propertyType) {
+                        case BIG_INT:
+                        case BLOCK_NUMBER:
+                            this[propertyName] = BigInt.from(options.default)
+                            break
+                        case BIG_FLOAT:
+                            this[propertyName] = BigFloat.from(options.default)
+                            break
+                        case DATE:
+                        case TIMESTAMP:
+                            this[propertyName] = new Date(options.default)
+                            break
+                        default:
+                            this[propertyName] = options.default
+                            break
+                    }
+                }
                 this._properties.registry = this._propertyRegistry
+                defaultSet && this._properties.capture(this)
             }
         )
 
@@ -159,6 +191,7 @@ class LiveTable {
     }
 
     async handleEvent(event: Event): Promise<boolean> {
+        await this._fsPromises()
         this.currentOrigin = event.origin
         this.currentTransaction = this.currentOrigin.transaction || {}
 
@@ -184,6 +217,7 @@ class LiveTable {
     }
 
     async handleCall(call: Call): Promise<boolean> {
+        await this._fsPromises()
         this.currentOrigin = call.origin
         this.currentTransaction = this.currentOrigin.transaction || {}
 
@@ -287,7 +321,7 @@ class LiveTable {
                 liveObject.contract = this.contract
 
                 const propertyData = liveObject._properties.fromRecord(record)
-                liveObject.assignProperties(propertyData)
+                liveObject._assignProperties(propertyData)
 
                 if (
                     !liveObject.chainId ||
@@ -325,7 +359,7 @@ class LiveTable {
         // Assign retrieved property values if record existed.
         const exists = records.length > 0
         if (exists) {
-            this.assignProperties(this._properties.fromRecord(records[0]))
+            this._assignProperties(this._properties.fromRecord(records[0]))
             if (!this.chainId || this.chainId === this.currentOrigin.chainId) {
                 this._assignBlockSpecificPropertiesFromOrigin()
             }
@@ -337,12 +371,9 @@ class LiveTable {
     async save() {
         await this._fsPromises()
 
-        // Ensure properties have changed since last snapshot.
-        if (!this._properties.haveChanged(this)) return
-
         // Get upsert components.
         const upsertComps = this._properties.getUpsertComps(this)
-        if (!upsertComps) return null
+        if (!upsertComps) return
         const { insertData, conflictColumns, updateColumns, primaryTimestampColumn } = upsertComps
 
         // Upsert live object.
@@ -358,10 +389,10 @@ class LiveTable {
         if (!records.length || !records[0]) return
 
         // Map column names back to propertes and assign values.
-        this.assignProperties(this._properties.fromRecord(records[0]))
+        this._assignProperties(this._properties.fromRecord(records[0]))
 
         // Publish event stating that this live object was upserted.
-        await this.publishChange()
+        await this._publishChange()
     }
 
     async query(
@@ -393,32 +424,6 @@ class LiveTable {
         const records = await this.query(tablePath, { hash: transactionHash }, { limit: 1 })
         this.currentTransaction = records[0]
         return this.currentTransaction
-    }
-
-    assignProperties(data: StringKeyMap) {
-        if (!Object.keys(data).length) {
-            console.warn(`Assigning empty properties`)
-        }
-        for (const propertyName in data) {
-            this[propertyName] = data[propertyName]
-        }
-        this._properties.capture(this)
-    }
-
-    async publishChange() {
-        await this._fsPromises()
-        const data = this._properties.snapshot
-        if (!data) throw `Can't publish a live object change that hasn't been persisted yet.`
-        if (!Object.keys(data).length) {
-            const eventName = await this.getEventName()
-            console.warn(`No changes to publish for ${eventName}`)
-            return
-        }
-        this.publishEvent(await this.getEventName(), this._properties.serialize(data))
-    }
-
-    publishEvent(name: string, data: StringKeyMap) {
-        this._publishEventQueue.push({ name, data })
     }
 
     addContractToGroup(address: string, group: string) {
@@ -544,6 +549,32 @@ class LiveTable {
             inputEvents: Object.keys(this._eventHandlers || {}),
             inputCalls: Object.keys(this._callHandlers || {}),
         }
+    }
+
+    _assignProperties(data: StringKeyMap) {
+        if (!Object.keys(data).length) {
+            console.warn(`Assigning empty properties`)
+        }
+        for (const propertyName in data) {
+            this[propertyName] = data[propertyName]
+        }
+        this._properties.capture(this)
+    }
+
+    async _publishChange() {
+        await this._fsPromises()
+        const data = this._properties.snapshot
+        if (!data) throw `Can't publish a live object change that hasn't been persisted yet.`
+        if (!Object.keys(data).length) {
+            const eventName = await this.getEventName()
+            console.warn(`No changes to publish for ${eventName}`)
+            return
+        }
+        this._publishEvent(await this.getEventName(), this._properties.serialize(data))
+    }
+
+    _publishEvent(name: string, data: StringKeyMap) {
+        this._publishEventQueue.push({ name, data })
     }
 
     _assignBlockSpecificPropertiesFromOrigin() {

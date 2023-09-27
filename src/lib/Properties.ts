@@ -25,6 +25,8 @@ import {
 } from './utils/propertyTypes'
 import { JSON as JsonColType } from './utils/columnTypes'
 import { BigFloat, BigInt } from './helpers'
+import { sha256 } from 'js-sha256'
+import { blockSpecificProperties } from './utils/defaults'
 
 class Properties {
     registry: { [key: string]: RegisteredProperty }
@@ -80,8 +82,7 @@ class Properties {
     }
 
     getUpsertComps(liveObject: LiveTable): UpsertComps | null {
-        // Get a map of the properties that currently hold values.
-        const propertyData = this.withValues(liveObject)
+        const propertyData = this.diffSinceLastSnapshot(liveObject)
 
         // Ensure all unique constraint properties have values.
         for (const propertyName of this.uniqueBy) {
@@ -104,8 +105,8 @@ class Properties {
         // Get the list of the property names to update on conflict.
         const updatePropertyNames: string[] = []
         for (const propertyName in propertyData) {
-            const update = !this.isUnique(propertyName) && this.canUpdate(propertyName)
-            update && updatePropertyNames.push(propertyName)
+            const shouldUpdate = !this.isUnique(propertyName) && this.canUpdate(propertyName)
+            shouldUpdate && updatePropertyNames.push(propertyName)
         }
 
         // Build "INSERT (...) ON CONFLICT (...) DO UPDATE SET (...)" components.
@@ -139,15 +140,45 @@ class Properties {
         this.snapshot = snapshot
     }
 
-    haveChanged(liveObject: LiveTable) {
-        if (!Object.keys(this.snapshot).length) return true
-
+    diffSinceLastSnapshot(liveObject: LiveTable): StringKeyMap {
+        const diff = {}
         for (const propertyName in this.registry) {
-            if (liveObject[propertyName] !== this.snapshot[propertyName]) {
-                return true
+            const currentValue = liveObject[propertyName]
+            if (currentValue === undefined) continue
+
+            const snapshotValue = this.snapshot[propertyName]
+
+            if (
+                this.isUnique(propertyName) ||
+                blockSpecificProperties.hasOwnProperty(propertyName) ||
+                this.didPropertyChange(propertyName, currentValue, snapshotValue)
+            ) {
+                diff[propertyName] = currentValue
             }
         }
-        return false
+        return diff
+    }
+
+    didPropertyChange(name: string, a: any, b: any): boolean {
+        const type = this.registry[name].metadata?.type || null
+        const aColValue = this.toColumnType(a, type)
+        const bColValue = this.toColumnType(b, type)
+        return this._propertyAsHash(aColValue) !== this._propertyAsHash(bColValue)
+    }
+
+    _propertyAsHash(value: any): string | null {
+        if (value === null || value === undefined) return null
+        let hash
+        try {
+            hash = sha256(typeof value === 'string' ? value : JSON.stringify(value))
+        } catch (err) {
+            try {
+                hash = sha256(value)
+            } catch (e) {
+                return value
+            }
+        }
+        return hash
     }
 
     withValues(liveObject: LiveTable): StringKeyMap {
@@ -207,7 +238,7 @@ class Properties {
 
     toColumnType(value: any, type: string | null) {
         const lowerType = type?.toLowerCase()
-        if (value === null) return null
+        if (value === null || value === undefined) return null
         if (isDate(value)) return value.toISOString()
         if (lowerType === NUMBER) return attemptToParseNumber(value)
         if (lowerType === BOOLEAN) return Boolean(value)
@@ -252,7 +283,7 @@ class Properties {
                 if (columnType === JsonColType && typeof options.default === 'object') {
                     defaultValue = JSON.stringify(options.default)
                 } else {
-                    defaultValue = options.default.toString()
+                    defaultValue = options.default?.toString() || null
                 }
             }
 
