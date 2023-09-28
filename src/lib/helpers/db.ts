@@ -3,6 +3,7 @@ import { UpsertPayload } from '@spec.dev/tables'
 import { tx } from '../tables'
 
 export async function saveAll(...liveObjects: LiveTable[]) {
+    if (!liveObjects?.length) return
     if (liveObjects.length === 1 && Array.isArray(liveObjects[0])) {
         liveObjects = liveObjects[0]
     }
