@@ -152,6 +152,8 @@ class LiveTable {
                 for (const propertyName in this._propertyRegistry) {
                     const { options } = this._propertyRegistry[propertyName]
                     if (!options.hasOwnProperty('default')) continue
+                    if (this[propertyName] !== undefined) continue
+
                     defaultSet = true
                     const propertyType = propertyMetadata[propertyName].type
                     switch (propertyType) {
@@ -171,6 +173,7 @@ class LiveTable {
                             break
                     }
                 }
+
                 this._properties.registry = this._propertyRegistry
                 defaultSet && this._properties.capture(this)
             }
