@@ -76,7 +76,10 @@ class Properties {
             if (value === undefined) {
                 throw `Live object is missing required unique property "${propertyName}" in order to load.`
             }
-            filters[this.toColumnName(propertyName) as string] = value
+            filters[this.toColumnName(propertyName) as string] = this.toColumnType(
+                value,
+                this.registry[propertyName].metadata?.type || null
+            )
         }
         return filters
     }
