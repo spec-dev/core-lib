@@ -39,6 +39,11 @@ export enum ChainId {
     Polygon = '137',
     Mumbai = '80001',
     Base = '8453',
+    Optimism = '10',
+    Arbitrum = '42161',
+    PGN = '424',
+    Celo = '42220',
+    Linea = '59144',
 }
 
 export type BlockNumber = BigInt

@@ -1,6 +1,6 @@
 {
     "name": "@spec.dev/core",
-    "version": "0.0.132",
+    "version": "0.0.133",
     "description": "Spec Core Library",
     "keywords": [
         "javascript",
@@ -34,7 +34,7 @@
         "@ethersproject/abi": "^5.7.0",
         "@spec.dev/rpc": "^0.0.5",
         "@spec.dev/tables": "^0.0.20",
-        "@spec.types/spec": "^0.0.30",
+        "@spec.types/spec": "^0.0.31",
         "bn.js": "^5.2.1",
         "js-sha256": "^0.10.1",
         "keccak256": "^1.0.6",
