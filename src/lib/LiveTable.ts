@@ -190,7 +190,7 @@ class LiveTable {
                 this._options.table ||
                 [
                     manifest.namespace,
-                    [camelToSnake(manifest.name), manifest.version.replace('.', '')].join('_'),
+                    [camelToSnake(manifest.name), manifest.version.replace(/\W/g, '')].join('_'),
                 ].join('.')
         })
 
