@@ -187,7 +187,11 @@ class LiveTable {
             this._liveObjectDescription = manifest.description
             this._liveObjectChainIds = unique((manifest.chains || []).map((id) => id.toString()))
             this._table =
-                this._options.table || [manifest.namespace, camelToSnake(manifest.name)].join('.')
+                this._options.table ||
+                [
+                    manifest.namespace,
+                    [camelToSnake(manifest.name), manifest.version.replace('.', '')].join('_'),
+                ].join('.')
         })
 
         this._fsPromises()

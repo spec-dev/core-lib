@@ -1,13 +1,15 @@
 {
     "name": "@spec.dev/core",
-    "version": "0.0.133",
+    "version": "0.0.134",
     "description": "Spec Core Library",
     "keywords": [
         "javascript",
         "typescript",
         "spec",
         "core",
-        "toolkit"
+        "toolkit",
+        "indexing",
+        "protocol"
     ],
     "homepage": "https://github.com/spec-dev/core-lib",
     "bugs": "https://github.com/spec-dev/core-lib/issues",
