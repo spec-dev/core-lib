@@ -22,6 +22,7 @@ export const decodeAbi = (
 function typeConvert(arr: any[]) {
     for (let i = 0; i < arr.length; i++) {
         if (Array.isArray(arr[i])) {
+            arr[i] = arr[i].concat()
             typeConvert(arr[i])
         } else if (arr[i] && typeof arr[i] === 'object' && arr[i]._isBigNumber) {
             arr[i] = BigInt.from(arr[i])
