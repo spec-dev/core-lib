@@ -44,6 +44,7 @@ export enum ChainId {
     PGN = '424',
     Celo = '42220',
     Linea = '59144',
+    Sepolia = '11155111',
 }
 
 export type BlockNumber = BigInt
