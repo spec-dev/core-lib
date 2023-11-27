@@ -610,29 +610,11 @@ class LiveTable {
     }
 
     _getEventHandlerForEventName(event: Event): RegisteredEventHandler | null {
-        const { nsp, name, version } = fromNamespacedVersion(event.name)
+        const { nsp, name } = fromNamespacedVersion(event.name)
         const eventNameWithoutVersion = [nsp, name].join('.')
-        const splitProperEventName = eventNameWithoutVersion.split('.')
-        const chainNsp = splitProperEventName[0]
-
-        // "contracts.nsp.contract.event"
-        const chainAgnosticEventNameWithContractsNsp = splitProperEventName.slice(1).join('.')
-
-        // "nsp.contract.event"
-        const chainAgnosticEventName = splitProperEventName.slice(2).join('.')
-
-        // "eth.nsp.contract.event"
-        const missingContractsNspEventName = [chainNsp, chainAgnosticEventName].join('.')
-
         const prioritizedMatchOptions = [
-            event.name,
-            chainAgnosticEventNameWithContractsNsp + `@${version}`,
-            chainAgnosticEventName + `@${version}`,
-            missingContractsNspEventName + `@${version}`,
+            event.name, // with version
             eventNameWithoutVersion,
-            chainAgnosticEventNameWithContractsNsp,
-            chainAgnosticEventName,
-            missingContractsNspEventName,
         ]
 
         for (const option of prioritizedMatchOptions) {
@@ -646,28 +628,7 @@ class LiveTable {
     _getCallHandlerForFunctionName(call: Call): RegisteredCallHandler | null {
         const { nsp, name, version } = fromNamespacedVersion(call.name)
         const functionNameWithoutVersion = [nsp, name].join('.')
-        const splitProperFunctionName = functionNameWithoutVersion.split('.')
-        const chainNsp = splitProperFunctionName[0]
-
-        // "contracts.nsp.contract.functionName"
-        const chainAgnosticFunctionNameWithContractsNsp = splitProperFunctionName.slice(1).join('.')
-
-        // "nsp.contract.functionName"
-        const chainAgnosticFunctionName = splitProperFunctionName.slice(2).join('.')
-
-        // "eth.nsp.contract.functionName"
-        const missingContractsNspFunctionName = [chainNsp, chainAgnosticFunctionName].join('.')
-
-        const prioritizedMatchOptions = [
-            call.name,
-            chainAgnosticFunctionNameWithContractsNsp + `@${version}`,
-            chainAgnosticFunctionName + `@${version}`,
-            missingContractsNspFunctionName + `@${version}`,
-            functionNameWithoutVersion,
-            chainAgnosticFunctionNameWithContractsNsp,
-            chainAgnosticFunctionName,
-            missingContractsNspFunctionName,
-        ]
+        const prioritizedMatchOptions = [call.name, functionNameWithoutVersion]
 
         for (const option of prioritizedMatchOptions) {
             const handler = this._callHandlers[option]
