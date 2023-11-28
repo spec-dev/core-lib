@@ -1,8 +1,9 @@
 import abi from './abi'
-import addresses from './addresses'
 import ContractMethod from '../ContractMethod'
 import { Address, Abi, AbiItemType } from '../../types'
 import { ContractType } from '../types'
+
+const DEFAULT_REGISTRY_ADDRESS = '0x000000006551c19487814612e58fe06813775758'
 
 class ERC6551Registry {
     protected _chainId: string
@@ -15,8 +16,7 @@ class ERC6551Registry {
 
     constructor(chainId: string | number, address?: Address) {
         this._chainId = chainId.toString()
-        this._address = address || addresses[this._chainId]
-        if (!this._address) throw `No ERC6551Registry address for chainId ${this._chainId}`
+        this._address = address || DEFAULT_REGISTRY_ADDRESS
         this._abi = abi
         this._attachMethods()
     }
@@ -31,51 +31,48 @@ class ERC6551Registry {
     }
 
     /**
-     * @param implementation Type: address, Indexed: false
-     * @param chainId Type: uint256, Indexed: false
-     * @param tokenContract Type: address, Indexed: false
-     * @param tokenId Type: uint256, Indexed: false
-     * @param salt Type: uint256, Indexed: false
+     * @param implementation Type: address
+     * @param salt Type: bytes32
+     * @param chainId Type: uint256
+     * @param tokenContract Type: address
+     * @param tokenId Type: uint256
      */
     async account(
         implementation: ContractType.Address,
+        salt: ContractType.Bytes,
         chainId: ContractType.Number,
         tokenContract: ContractType.Address,
-        tokenId: ContractType.Number,
-        salt: ContractType.Number
+        tokenId: ContractType.Number
     ): Promise<ContractType.Address> {
         return this._methods.account(
             implementation,
+            salt.toString(),
             chainId.toString(),
             tokenContract,
-            tokenId.toString(),
-            salt.toString()
+            tokenId.toString()
         )
     }
 
     /**
-     * @param implementation Type: address, Indexed: false
-     * @param chainId Type: uint256, Indexed: false
-     * @param tokenContract Type: address, Indexed: false
-     * @param tokenId Type: uint256, Indexed: false
-     * @param salt Type: uint256, Indexed: false
-     * @param initData Type: bytes, Indexed: false
+     * @param implementation Type: address
+     * @param salt Type: bytes32
+     * @param chainId Type: uint256
+     * @param tokenContract Type: address
+     * @param tokenId Type: uint256
      */
     async createAccount(
         implementation: ContractType.Address,
+        salt: ContractType.Bytes,
         chainId: ContractType.Number,
         tokenContract: ContractType.Address,
-        tokenId: ContractType.Number,
-        salt: ContractType.Number,
-        initData: ContractType.Bytes
-    ): Promise<string> {
+        tokenId: ContractType.Number
+    ): Promise<ContractType.Address> {
         return this._methods.createAccount(
             implementation,
+            salt.toString(),
             chainId.toString(),
             tokenContract,
-            tokenId.toString(),
-            salt.toString(),
-            initData
+            tokenId.toString()
         )
     }
 }
