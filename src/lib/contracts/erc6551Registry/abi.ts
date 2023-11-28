@@ -1,7 +1,7 @@
 export default [
     {
         inputs: [],
-        name: 'InitializationFailed',
+        name: 'AccountCreationFailed',
         type: 'error',
     },
     {
@@ -14,10 +14,16 @@ export default [
                 type: 'address',
             },
             {
-                indexed: false,
+                indexed: true,
                 internalType: 'address',
                 name: 'implementation',
                 type: 'address',
+            },
+            {
+                indexed: false,
+                internalType: 'bytes32',
+                name: 'salt',
+                type: 'bytes32',
             },
             {
                 indexed: false,
@@ -26,25 +32,19 @@ export default [
                 type: 'uint256',
             },
             {
-                indexed: false,
+                indexed: true,
                 internalType: 'address',
                 name: 'tokenContract',
                 type: 'address',
             },
             {
-                indexed: false,
+                indexed: true,
                 internalType: 'uint256',
                 name: 'tokenId',
                 type: 'uint256',
             },
-            {
-                indexed: false,
-                internalType: 'uint256',
-                name: 'salt',
-                type: 'uint256',
-            },
         ],
-        name: 'AccountCreated',
+        name: 'ERC6551AccountCreated',
         type: 'event',
     },
     {
@@ -55,6 +55,11 @@ export default [
                 type: 'address',
             },
             {
+                internalType: 'bytes32',
+                name: 'salt',
+                type: 'bytes32',
+            },
+            {
                 internalType: 'uint256',
                 name: 'chainId',
                 type: 'uint256',
@@ -67,11 +72,6 @@ export default [
             {
                 internalType: 'uint256',
                 name: 'tokenId',
-                type: 'uint256',
-            },
-            {
-                internalType: 'uint256',
-                name: 'salt',
                 type: 'uint256',
             },
         ],
@@ -94,6 +94,11 @@ export default [
                 type: 'address',
             },
             {
+                internalType: 'bytes32',
+                name: 'salt',
+                type: 'bytes32',
+            },
+            {
                 internalType: 'uint256',
                 name: 'chainId',
                 type: 'uint256',
@@ -107,16 +112,6 @@ export default [
                 internalType: 'uint256',
                 name: 'tokenId',
                 type: 'uint256',
-            },
-            {
-                internalType: 'uint256',
-                name: 'salt',
-                type: 'uint256',
-            },
-            {
-                internalType: 'bytes',
-                name: 'initData',
-                type: 'bytes',
             },
         ],
         name: 'createAccount',
