@@ -41,6 +41,7 @@ export enum ChainId {
     Base = '8453',
     Optimism = '10',
     Arbitrum = '42161',
+    ArbitrumSepolia = '421614',
     PGN = '424',
     Celo = '42220',
     Linea = '59144',
